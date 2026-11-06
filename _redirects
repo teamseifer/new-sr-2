@@ -1,1 +1,36 @@
 /api_proxy.php /api_proxy 200
+
+# If a relative ../slug/ resolves from a path without trailing slash,
+# the browser hits /slug/ which otherwise serves the homepage (200).
+/adm /upsell/adm/ 301
+/adm/ /upsell/adm/ 301
+/biometria /upsell/biometria/ 301
+/biometria/ /upsell/biometria/ 301
+/cadastro /upsell/cadastro/ 301
+/cadastro/ /upsell/cadastro/ 301
+/certidao /upsell/certidao/ 301
+/certidao/ /upsell/certidao/ 301
+/chave_pix /upsell/chave_pix/ 301
+/chave_pix/ /upsell/chave_pix/ 301
+/encerramento /upsell/encerramento/ 301
+/encerramento/ /upsell/encerramento/ 301
+/imposto_ress /upsell/imposto_ress/ 301
+/imposto_ress/ /upsell/imposto_ress/ 301
+/iof /upsell/iof/ 301
+/iof/ /upsell/iof/ 301
+/issqn /upsell/issqn/ 301
+/issqn/ /upsell/issqn/ 301
+/liberacao /upsell/liberacao/ 301
+/liberacao/ /upsell/liberacao/ 301
+/multa_ir /upsell/multa_ir/ 301
+/multa_ir/ /upsell/multa_ir/ 301
+/prioridade /upsell/prioridade/ 301
+/prioridade/ /upsell/prioridade/ 301
+/registro /upsell/registro/ 301
+/registro/ /upsell/registro/ 301
+/seguro /upsell/seguro/ 301
+/seguro/ /upsell/seguro/ 301
+/ted /upsell/ted/ 301
+/ted/ /upsell/ted/ 301
+/verificacao /upsell/verificacao/ 301
+/verificacao/ /upsell/verificacao/ 301

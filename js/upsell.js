@@ -75,14 +75,44 @@
       onPaid: function(){
         try { fbq('track','Purchase',{value:price,currency:'BRL'}); } catch(e){}
         var ok = document.getElementById('paid-ok'); if (ok) { ok.textContent = cfg.okText || 'Pagamento confirmado! ✅'; ok.style.display='block'; }
-        if (window.fireConfetti) fireConfetti(40);
-        setTimeout(function(){ window.location.href = cfg.nextUrl; }, 1800);
+        window.__allowLeave = true;
+        try { if (window.fireConfetti) fireConfetti(40); } catch(e){}
+        setTimeout(goNext, 400);
       },
       accent: '#1351B4',
       apiBase: '../../api_proxy.php',
       resume: window.__PIX_RESUME || null
     });
     window.__PIX_RESUME = null;
+  }
+  /* Resolve ../slug/ even if the current URL has no trailing slash.
+     Without this, /upsell/iof + ../multa_ir/ becomes /multa_ir/ (homepage SPA fallback). */
+  function resolveNext(url) {
+    url = String(url || '');
+    if (!url) return url;
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.charAt(0) === '/') return url;
+    var path = location.pathname || '/';
+    if (!/\/$/.test(path)) {
+      path = /\.[a-zA-Z0-9]{1,8}$/.test(path) ? path.replace(/\/[^/]+$/, '/') : (path + '/');
+    }
+    try {
+      var u = new URL(url, location.origin + path);
+      var out = u.pathname;
+      if (out.slice(-1) !== '/' && !/\.[a-zA-Z0-9]{1,8}$/.test(out)) out += '/';
+      return out + u.search + u.hash;
+    } catch (e) {
+      return url;
+    }
+  }
+  var _left = false;
+  function goNext() {
+    if (_left) return;
+    _left = true;
+    window.__allowLeave = true;
+    var url = resolveNext(cfg.nextUrl);
+    if (window.__withParams) url = window.__withParams(url);
+    try { window.location.replace(url); } catch (e) { window.location.href = url; }
   }
   window.openPix = openPix;
   function closePixToDownsell(){
@@ -133,7 +163,10 @@
         if (c.name) { var t2 = document.getElementById('first-name'); if (t2) t2.textContent = c.name.split(' ')[0].toUpperCase(); }
       }).catch(function(){});
   }
-  /* liberar saída quando o PIX confirmar (onPaid faz location.href) */
+  /* liberar saída quando o PIX confirmar (onPaid faz location.replace) */
   window.__allowLeave = false;
   var _obs = setInterval(function(){ var ok = document.getElementById('paid-ok'); if (ok && ok.style.display==='block') { window.__allowLeave = true; clearInterval(_obs); } }, 300);
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState === 'visible' && window.__allowLeave) goNext();
+  });
 })();

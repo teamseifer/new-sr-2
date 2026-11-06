@@ -169,7 +169,7 @@ async function checkPix(manual){
       }catch(e){}
       if(!checkPix.redirected){
         checkPix.redirected=true;
-        setTimeout(function(){window.location.href=(window.__withParams?window.__withParams('../upsell/registro/'):'../upsell/registro/');},1500);
+        setTimeout(function(){window.location.href=(window.__withParams?window.__withParams('/upsell/registro/'):'/upsell/registro/');},1500);
       }
       return true;
     }

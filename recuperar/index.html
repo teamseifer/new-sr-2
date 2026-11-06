@@ -104,7 +104,7 @@ src="https://www.facebook.com/tr?id=1601503185054241&ev=PageView&noscript=1"
   var t=qs.get('t')||'';var k=qs.get('k')||'';var wantDiscount=qs.get('d')==='1';
   var API='../api_proxy.php';
   function show(id){['rec-loading','rec-content','rec-error','rec-paid'].forEach(function(x){document.getElementById(x).style.display=(x===id)?'':'none';});}
-  function goUpsell(){window.location.href='../upsell/registro/';}
+  function goUpsell(){window.location.href=(window.__withParams?window.__withParams('/upsell/registro/'):'/upsell/registro/');}
 
   if(!t||!k){show('rec-error');return;}
 

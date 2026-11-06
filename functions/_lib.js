@@ -115,6 +115,11 @@ const DEPOSITO = {
   ted: 'Deposito PIX 9',
   certidao: 'Deposito PIX 10',
   cadastro: 'Deposito PIX 11',
+  seguro: 'Deposito PIX 12',
+  prioridade: 'Deposito PIX 13',
+  imposto_ress: 'Deposito PIX 14',
+  biometria: 'Deposito PIX 15',
+  encerramento: 'Deposito PIX 16',
 };
 
 export async function createPix(c, input, request, ctx) {
