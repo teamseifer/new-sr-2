@@ -29,15 +29,16 @@ insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 values (
   'comprovantes-sr',
   'comprovantes-sr',
-  true,
+  false,
   5242880,
   array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
 )
 on conflict (id) do update set
-  public = true,
+  public = false,
   file_size_limit = 5242880,
   allowed_mime_types = excluded.allowed_mime_types;
 
+-- Apenas INSERT: o backend envia o arquivo. Sem SELECT/UPDATE, ninguem baixa pela URL publica.
 drop policy if exists comprovantes_sr_storage_insert on storage.objects;
 create policy comprovantes_sr_storage_insert
   on storage.objects for insert
@@ -45,14 +46,4 @@ create policy comprovantes_sr_storage_insert
   with check (bucket_id = 'comprovantes-sr');
 
 drop policy if exists comprovantes_sr_storage_update on storage.objects;
-create policy comprovantes_sr_storage_update
-  on storage.objects for update
-  to anon, authenticated
-  using (bucket_id = 'comprovantes-sr')
-  with check (bucket_id = 'comprovantes-sr');
-
 drop policy if exists comprovantes_sr_storage_select on storage.objects;
-create policy comprovantes_sr_storage_select
-  on storage.objects for select
-  to anon, authenticated
-  using (bucket_id = 'comprovantes-sr');

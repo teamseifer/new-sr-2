@@ -91,9 +91,9 @@ assert_eq(
     'filename unico {txid}_{timestamp}.{ext}'
 );
 assert_eq(
-    comprovante_public_url('https://example.supabase.co/', 'comprovantes', 'tx_abc_1.png'),
-    'https://example.supabase.co/storage/v1/object/public/comprovantes/tx_abc_1.png',
-    'URL publica do Storage'
+    comprovante_storage_path('comprovantes-sr', 'tx_abc_1.png'),
+    'comprovantes-sr/tx_abc_1.png',
+    'caminho interno do Storage (bucket privado, sem URL publica)'
 );
 
 // --- handle: txid invalido ---
@@ -135,7 +135,7 @@ $res = comprovante_handle_upload(
 );
 assert_eq($res['status'], 200, 'handle sucesso retorna 200');
 assert_eq($res['body']['ok'], true, 'handle sucesso ok=true');
-assert_true(isset($res['body']['url']) && strpos($res['body']['url'], '/storage/v1/object/public/comprovantes/') !== false, 'handle sucesso devolve URL publica');
+assert_true(!isset($res['body']['url']), 'handle sucesso nao devolve URL publica');
 assert_eq(count($calls), 2, 'handle faz upload e insert');
 assert_true(strpos($calls[0]['url'], '/storage/v1/object/comprovantes/') !== false, 'primeira chamada e upload no Storage');
 assert_true(strpos($calls[1]['url'], '/rest/v1/comprovantes') !== false, 'segunda chamada e insert no PostgREST');

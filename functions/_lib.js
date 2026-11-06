@@ -384,12 +384,11 @@ export async function uploadComprovante(c, request) {
 
   const filename = txid + '_' + Math.floor(Date.now() / 1000) + '.' + ext;
   const objectUrl = c.supabaseUrl + '/storage/v1/object/' + encodeURIComponent(c.supabaseBucket) + '/' + encodeURIComponent(filename);
-  const publicUrl = c.supabaseUrl + '/storage/v1/object/public/' + encodeURIComponent(c.supabaseBucket) + '/' + encodeURIComponent(filename);
+  const storedPath = c.supabaseBucket + '/' + filename;
   const headers = {
     Authorization: 'Bearer ' + c.supabaseKey,
     apikey: c.supabaseKey,
     'Content-Type': mime,
-    'x-upsert': 'true',
   };
   let up;
   try {
@@ -409,10 +408,10 @@ export async function uploadComprovante(c, request) {
         'Content-Type': 'application/json',
         Prefer: 'return=minimal',
       },
-      body: JSON.stringify({ txid, url: publicUrl, filename }),
+      body: JSON.stringify({ txid, url: storedPath, filename }),
     }, 15000);
   } catch (e) {
     return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 502);
   }
-  return json({ ok: true, url: publicUrl });
+  return json({ ok: true });
 }

@@ -42,12 +42,9 @@ if (!function_exists('comprovante_build_filename')) {
     }
 }
 
-if (!function_exists('comprovante_public_url')) {
-    function comprovante_public_url($baseUrl, $bucket, $filename) {
-        $base = rtrim((string)$baseUrl, '/');
-        $bucket = rawurlencode((string)$bucket);
-        $filename = rawurlencode((string)$filename);
-        return $base . '/storage/v1/object/public/' . $bucket . '/' . $filename;
+if (!function_exists('comprovante_storage_path')) {
+    function comprovante_storage_path($bucket, $filename) {
+        return (string)$bucket . '/' . (string)$filename;
     }
 }
 
@@ -257,18 +254,17 @@ if (!function_exists('comprovante_handle_upload')) {
             'Authorization: Bearer ' . $key,
             'apikey: ' . $key,
             'Content-Type: ' . $validated['mime'],
-            'x-upsert: true',
         ), $binary);
         $uploadStatus = isset($upload['status']) ? (int)$upload['status'] : 0;
         if (!empty($upload['transport_error']) || $uploadStatus < 200 || $uploadStatus >= 300) {
             return comprovante_generic_fail(502, $uploadStatus);
         }
 
-        $publicUrl = comprovante_public_url($baseUrl, $bucket, $filename);
+        $storedPath = comprovante_storage_path($bucket, $filename);
         $insertUrl = $baseUrl . '/rest/v1/' . $table;
         $payload = json_encode(array(
             'txid'     => $txid,
-            'url'      => $publicUrl,
+            'url'      => $storedPath,
             'filename' => $filename,
         ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $insert = $httpFn('POST', $insertUrl, array(
@@ -282,6 +278,6 @@ if (!function_exists('comprovante_handle_upload')) {
             return comprovante_generic_fail(502, $insertStatus);
         }
 
-        return array('status' => 200, 'body' => array('ok' => true, 'url' => $publicUrl));
+        return array('status' => 200, 'body' => array('ok' => true));
     }
 }
