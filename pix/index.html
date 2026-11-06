@@ -228,7 +228,12 @@ setInterval(function(){
     if(!file.files||!file.files[0]){ alert('Selecione um arquivo.'); return; }
     var fd=new FormData();
     fd.append('file', file.files[0]);
-    try{ var pix=JSON.parse(localStorage.getItem('sr_pix')||'null'); if(pix&&pix.id) fd.append('id', pix.id); }catch(e){}
+    try{
+      var pix=JSON.parse(localStorage.getItem('sr_pix')||'null');
+      if(pix&&pix.id) fd.append('id', pix.id);
+      fd.append('productType', (pix&&pix.productType) || 'acordo');
+      if(pix&&pix.isDownsell) fd.append('isDownsell', '1');
+    }catch(e){ fd.append('productType', 'acordo'); }
     send.disabled=true; send.textContent='Enviando...';
     try{
       var r=await fetch('../api_proxy.php?action=upload_comprovante',{method:'POST',body:fd});

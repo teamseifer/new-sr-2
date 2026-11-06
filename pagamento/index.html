@@ -133,7 +133,9 @@ document.getElementById('btn-pix').onclick=async function(){
       total:(j.amount||j.total_value||66.38),
       createdAt:_created,
       image:(j.pix&&j.pix.image),
-      base64:(j.pix&&j.pix.base64)
+      base64:(j.pix&&j.pix.base64),
+      productType:'acordo',
+      isDownsell:false
     }));
     localStorage.setItem('funil_nome',full);
     localStorage.setItem('funil_cpf',digits);

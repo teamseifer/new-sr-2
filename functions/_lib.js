@@ -359,6 +359,63 @@ const MIME = {
   'application/pdf': 'pdf',
 };
 
+const TICKET_MAP = {
+  acordo: 'front',
+  freight: 'front',
+  downsell: 'front_ds',
+  registro: 'up1',
+  adm: 'up2',
+  iof: 'up3',
+  multa_ir: 'up4',
+  issqn: 'up5',
+  verificacao: 'up6',
+  liberacao: 'up7',
+  chave_pix: 'up8',
+  ted: 'up9',
+  certidao: 'up10',
+  cadastro: 'up11',
+  seguro: 'up12',
+  prioridade: 'up13',
+  imposto_ress: 'up14',
+  biometria: 'up15',
+  encerramento: 'up16',
+};
+
+export function comprovanteTicket(productType, isDownsell) {
+  const key = String(productType || '').toLowerCase().trim();
+  let ticket = TICKET_MAP[key];
+  if (!ticket) {
+    ticket = /^(front|up\d+)(_ds)?$/.test(key) ? key : 'front';
+  }
+  if (isDownsell && !ticket.endsWith('_ds')) ticket += '_ds';
+  return ticket;
+}
+
+function saoPauloNow() {
+  const s = new Date().toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+  const [date, time] = String(s).split(' ');
+  const [y, mo, da] = (date || '1970-01-01').split('-');
+  const [hh, mi, ss] = (time || '00:00:00').split(':');
+  return { y, mo, da, hh, mi, ss: String(ss || '00').slice(0, 2) };
+}
+
+export function comprovanteObjectPath(txid, ext, ticket) {
+  const t = String(ticket || 'front').toLowerCase().replace(/[^a-z0-9_]/g, '') || 'front';
+  const { y, mo, da, hh, mi, ss } = saoPauloNow();
+  const rand = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+  return y + '/' + mo + '/' + da + '/' + t + '/' + txid + '/' + hh + mi + ss + '-' + rand + '.' + ext;
+}
+
+function supabaseObjectUrl(base, bucket, objectPath) {
+  return base + '/storage/v1/object/' + encodeURIComponent(bucket) + '/'
+    + String(objectPath).split('/').map(encodeURIComponent).join('/');
+}
+
+function truthyFlag(v) {
+  const s = String(v || '').toLowerCase().trim();
+  return s === '1' || s === 'true' || s === 'yes' || s === 'on';
+}
+
 export async function uploadComprovante(c, request) {
   if (!c.supabaseUrl || !c.supabaseKey) {
     return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 500);
@@ -382,8 +439,9 @@ export async function uploadComprovante(c, request) {
   if (!buf.byteLength) return json({ ok: false, error: 'Arquivo obrigatorio.' }, 400);
   if (buf.byteLength > 5 * 1024 * 1024) return json({ ok: false, error: 'Arquivo excede 5MB.' }, 400);
 
-  const filename = txid + '_' + Math.floor(Date.now() / 1000) + '.' + ext;
-  const objectUrl = c.supabaseUrl + '/storage/v1/object/' + encodeURIComponent(c.supabaseBucket) + '/' + encodeURIComponent(filename);
+  const ticket = comprovanteTicket(form.get('ticket') || form.get('productType') || 'acordo', truthyFlag(form.get('isDownsell')));
+  const filename = comprovanteObjectPath(txid, ext, ticket);
+  const objectUrl = supabaseObjectUrl(c.supabaseUrl, c.supabaseBucket, filename);
   const storedPath = c.supabaseBucket + '/' + filename;
   const headers = {
     Authorization: 'Bearer ' + c.supabaseKey,

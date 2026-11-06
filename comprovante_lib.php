@@ -33,6 +33,44 @@ if (!function_exists('comprovante_sanitize_txid')) {
     }
 }
 
+if (!function_exists('comprovante_ticket')) {
+    function comprovante_ticket($productType, $isDownsell = false) {
+        $key = strtolower(trim((string)$productType));
+        $map = array(
+            'acordo'       => 'front',
+            'freight'      => 'front',
+            'downsell'     => 'front_ds',
+            'registro'     => 'up1',
+            'adm'          => 'up2',
+            'iof'          => 'up3',
+            'multa_ir'     => 'up4',
+            'issqn'        => 'up5',
+            'verificacao'  => 'up6',
+            'liberacao'    => 'up7',
+            'chave_pix'    => 'up8',
+            'ted'          => 'up9',
+            'certidao'     => 'up10',
+            'cadastro'     => 'up11',
+            'seguro'       => 'up12',
+            'prioridade'   => 'up13',
+            'imposto_ress' => 'up14',
+            'biometria'    => 'up15',
+            'encerramento' => 'up16',
+        );
+        if (isset($map[$key])) {
+            $ticket = $map[$key];
+        } elseif (preg_match('/^(front|up\d+)(_ds)?$/', $key)) {
+            $ticket = $key;
+        } else {
+            $ticket = 'front';
+        }
+        if ($isDownsell && substr($ticket, -3) !== '_ds') {
+            $ticket .= '_ds';
+        }
+        return $ticket;
+    }
+}
+
 if (!function_exists('comprovante_build_filename')) {
     function comprovante_build_filename($txid, $ext, $timestamp = null) {
         if ($timestamp === null) {
@@ -42,9 +80,31 @@ if (!function_exists('comprovante_build_filename')) {
     }
 }
 
+if (!function_exists('comprovante_object_path')) {
+    function comprovante_object_path($txid, $ext, $ticket, $now = null) {
+        if (!$now instanceof DateTimeInterface) {
+            $now = new DateTimeImmutable('now', new DateTimeZone('America/Sao_Paulo'));
+        }
+        $ticket = preg_replace('/[^a-z0-9_]/', '', strtolower((string)$ticket));
+        if ($ticket === '') {
+            $ticket = 'front';
+        }
+        $rand = bin2hex(random_bytes(4));
+        return $now->format('Y/m/d') . '/' . $ticket . '/' . $txid . '/' . $now->format('His') . '-' . $rand . '.' . $ext;
+    }
+}
+
 if (!function_exists('comprovante_storage_path')) {
     function comprovante_storage_path($bucket, $filename) {
         return (string)$bucket . '/' . (string)$filename;
+    }
+}
+
+if (!function_exists('comprovante_object_url')) {
+    function comprovante_object_url($baseUrl, $bucket, $objectPath) {
+        $base = rtrim((string)$baseUrl, '/');
+        $parts = array_map('rawurlencode', explode('/', (string)$objectPath));
+        return $base . '/storage/v1/object/' . rawurlencode((string)$bucket) . '/' . implode('/', $parts);
     }
 }
 
@@ -239,7 +299,9 @@ if (!function_exists('comprovante_handle_upload')) {
             return comprovante_generic_fail(500);
         }
 
-        $filename = comprovante_build_filename($txid, $validated['ext']);
+        $isDownsell = !empty($post['isDownsell']) && (string)$post['isDownsell'] !== '0' && (string)$post['isDownsell'] !== 'false';
+        $ticket = comprovante_ticket(isset($post['ticket']) ? $post['ticket'] : (isset($post['productType']) ? $post['productType'] : 'acordo'), $isDownsell);
+        $filename = comprovante_object_path($txid, $validated['ext'], $ticket);
         $binary = @file_get_contents($validated['tmp']);
         if ($binary === false || $binary === '') {
             return comprovante_generic_fail(500);
@@ -249,7 +311,7 @@ if (!function_exists('comprovante_handle_upload')) {
             $httpFn = 'comprovante_http_request';
         }
 
-        $objectUrl = $baseUrl . '/storage/v1/object/' . rawurlencode($bucket) . '/' . rawurlencode($filename);
+        $objectUrl = comprovante_object_url($baseUrl, $bucket, $filename);
         $upload = $httpFn('POST', $objectUrl, array(
             'Authorization: Bearer ' . $key,
             'apikey: ' . $key,
