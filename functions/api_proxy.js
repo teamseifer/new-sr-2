@@ -19,11 +19,11 @@ export async function onRequest(context) {
       if (request.method !== 'POST') return json({ ok: false, error: 'Metodo nao permitido. Use POST.' }, 405);
       let body = {};
       try { body = await request.json(); } catch (e) { return json({ ok: false, error: 'JSON invalido.' }, 400); }
-      return await createPix(c, body, request);
+      return await createPix(c, body, request, context);
     }
     if (action === 'check_status') {
       const id = url.searchParams.get('id') || url.searchParams.get('clientIdentifier') || '';
-      return await checkStatus(c, String(id).trim());
+      return await checkStatus(c, String(id).trim(), context);
     }
     if (action === 'consultar_cpf') {
       return await consultarCpf(c, url.searchParams.get('cpf') || '');
