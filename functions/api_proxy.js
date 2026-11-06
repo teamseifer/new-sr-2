@@ -13,7 +13,13 @@ export async function onRequest(context) {
 
   try {
     if (action === 'ping') {
-      return json({ ok: true, message: 'api_proxy OK.', php_version: 'pages-functions', curl_enabled: true });
+      return json({
+        ok: true,
+        message: 'api_proxy OK.',
+        php_version: 'pages-functions',
+        curl_enabled: true,
+        mangofy: !!(c.mangofyKey && c.mangofyStore),
+      });
     }
     if (action === 'create_pix') {
       if (request.method !== 'POST') return json({ ok: false, error: 'Metodo nao permitido. Use POST.' }, 405);

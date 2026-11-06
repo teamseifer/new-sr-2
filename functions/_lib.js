@@ -79,6 +79,7 @@ export async function mangofyRequest(c, method, path, body = null) {
     Accept: 'application/json',
     Authorization: c.mangofyKey,
     'Store-Code': c.mangofyStore,
+    'User-Agent': 'funil-sr-2026-proxy/4.0 (mangofy)',
   };
   const opts = { method: method.toUpperCase(), headers };
   if (body !== null) {
@@ -93,7 +94,22 @@ export async function mangofyRequest(c, method, path, body = null) {
   }
   let data = null;
   try { data = await res.json(); } catch (e) { data = null; }
-  return { ok: res.status === 200 || res.status === 202, http: res.status, data, error: null };
+  return { ok: res.status >= 200 && res.status < 300, http: res.status, data, error: null };
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function pixFromTx(tx, fallbackId) {
+  const pixObj = tx && tx.pix && typeof tx.pix === 'object' ? tx.pix : {};
+  const paymentCode = String(pick(tx, ['payment_code', 'paymentCode', 'id', 'transactionId']) || fallbackId || '');
+  const pixCode = pick(pixObj, ['pix_qrcode_text', 'pixQrCode', 'pix_code', 'qrcode', 'code', 'emv'])
+    || pick(tx, ['pix_qrcode_text']);
+  const pixQr = pick(pixObj, ['pix_qrcode_image', 'pixQrCodeImage', 'qr_code', 'qrCode', 'image'])
+    || pick(tx, ['pix_qrcode_image']);
+  const status = String(pick(tx, ['payment_status', 'status', 'paymentStatus']) || '').toLowerCase();
+  return { paymentCode, pixCode, pixQr, status };
 }
 
 function mangofyPayment(data) {
@@ -149,12 +165,11 @@ export async function createPix(c, input, request, ctx) {
 
   const productType = cleanText(input.productType, 40) || 'acordo';
   const itemName = DEPOSITO[productType] || cleanText(input.productName, 80) || 'Deposito PIX';
-  const identifier = cleanText(input.identifier, 100) || ('SR_' + Date.now());
   const origin = new URL(request.url).origin;
   const postback = origin + '/api_proxy?action=webhook';
+  const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '187.45.12.33';
 
   const payload = {
-    external_code: identifier,
     payment_method: 'pix',
     payment_format: isUpsell ? 'upsell' : 'regular',
     installments: 1,
@@ -174,45 +189,60 @@ export async function createPix(c, input, request, ctx) {
       name,
       document,
       phone,
-      ip: request.headers.get('cf-connecting-ip') || '127.0.0.1',
+      ip: String(clientIp).split(',')[0].trim() || '187.45.12.33',
     },
     pix: { expires_in_days: 1 },
   };
 
-  const result = await mangofyRequest(c, 'POST', '/api/v1/payment', payload);
-  const tx = mangofyPayment(result.data);
-  if (!result.ok) {
-    return json({ ok: false, error: 'Erro ao gerar PIX na Mangofy.', http_status: result.http }, result.http >= 400 ? result.http : 502);
+  let last = null;
+  let lastId = cleanText(input.identifier, 100) || ('SR_' + Date.now());
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    lastId = (cleanText(input.identifier, 80) || ('SR_' + Date.now())) + (attempt > 1 ? '_r' + attempt : '');
+    payload.external_code = lastId.slice(0, 100);
+    const result = await mangofyRequest(c, 'POST', '/api/v1/payment', payload);
+    last = result;
+    if (result.error === 'Gateway nao configurado.') {
+      return json({ ok: false, error: 'Gateway PIX nao configurado.', http_status: 500 }, 500);
+    }
+    const tx = mangofyPayment(result.data);
+    const extracted = pixFromTx(tx, lastId);
+    if (extracted.pixCode) {
+      const createdAt = utmifyNow();
+      const order = {
+        orderId: extracted.paymentCode,
+        productType,
+        title: itemName,
+        amountCents,
+        createdAt,
+        tracking: pickTracking(input),
+        customer: { name, email, phone, document, ip: payload.customer.ip },
+      };
+      const pending = utmifySend(c, order, 'waiting_payment');
+      if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(pending);
+      else await pending;
+      return json({
+        ok: true,
+        amount,
+        transactionId: extracted.paymentCode,
+        id: extracted.paymentCode,
+        identifier: lastId,
+        pix: { code: extracted.pixCode, image: extracted.pixQr, base64: null },
+        pix_copy_paste: extracted.pixCode,
+        pix_qr_code_url: extracted.pixQr,
+      });
+    }
+    if (result.http === 422) {
+      const msg = (result.data && (result.data.message || result.data.error)) || 'Dados invalidos para gerar o PIX.';
+      return json({ ok: false, error: String(msg), http_status: 422 }, 422);
+    }
+    if (attempt < 3) await sleep(800 * attempt);
   }
-  const pixObj = tx.pix && typeof tx.pix === 'object' ? tx.pix : {};
-  const paymentCode = String(pick(tx, ['payment_code', 'paymentCode', 'id', 'transactionId']) || identifier);
-  const pixCode = pick(pixObj, ['pix_qrcode_text', 'pixQrCode', 'pix_code', 'qrcode', 'code', 'emv'])
-    || pick(tx, ['pix_qrcode_text']);
-  const pixQr = pick(pixObj, ['pix_qrcode_image', 'pixQrCodeImage', 'qr_code', 'qrCode', 'image'])
-    || pick(tx, ['pix_qrcode_image']);
-  const createdAt = utmifyNow();
-  const order = {
-    orderId: paymentCode,
-    productType,
-    title: itemName,
-    amountCents,
-    createdAt,
-    tracking: pickTracking(input),
-    customer: { name, email, phone, document, ip: payload.customer.ip },
-  };
-  const pending = utmifySend(c, order, 'waiting_payment');
-  if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(pending);
-  else await pending;
-  return json({
-    ok: true,
-    amount,
-    transactionId: paymentCode,
-    id: paymentCode,
-    identifier,
-    pix: { code: pixCode, image: pixQr, base64: null },
-    pix_copy_paste: pixCode,
-    pix_qr_code_url: pixQr,
-  });
+  const tx = mangofyPayment(last && last.data);
+  const st = pixFromTx(tx, lastId).status;
+  const msg = st === 'gateway_error'
+    ? 'Adquirente PIX indisponivel. Tente novamente em instantes.'
+    : ((last && last.error) || 'Erro ao gerar PIX na Mangofy.');
+  return json({ ok: false, error: msg, http_status: (last && last.http) || 502, payment_status: st || null }, 502);
 }
 
 const PAID = ['AUTHORIZED', 'PAID', 'PAGO', 'APPROVED', 'COMPLETED', 'CONFIRMED', 'SUCCESS', 'PAYED'];
