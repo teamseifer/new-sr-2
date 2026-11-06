@@ -1,17 +1,25 @@
 // Helpers das Pages Functions do Funil SR.
-// Secrets via env da Cloudflare: MANGOFY_*, CPF_*, META_*, SUPABASE_*.
+// Mangofy / Meta / Supabase: secrets da Cloudflare.
+// CPF: token embutido (MagmaDataHub) — a Function precisa de User-Agent de browser
+// senão o Magma recusa a consulta quando o fetch sai dos IPs da Cloudflare.
 
 export const BASE_AMOUNT = 66.38;
+
+const CPF_PRIMARY_URL = 'https://magmadatahub.com/api.php';
+const CPF_PRIMARY_TOKEN = 'bda23ca460ae7b58ec31e2c17079405d';
+const CPF_FALLBACK_URL = 'https://api.apicpf.dev/consulta';
+const CPF_FALLBACK_KEY = 'sk-live_b1ddb2a65212004784d3b7d00748b331cf569854337c7d08';
+const FETCH_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 export function cfg(env) {
   return {
     mangofyBase: String(env.MANGOFY_BASE_URL || 'https://checkout.mangofy.com.br').replace(/\/+$/, ''),
     mangofyKey: String(env.MANGOFY_API_KEY || '').trim(),
     mangofyStore: String(env.MANGOFY_STORE_CODE || '').trim(),
-    cpfPrimaryUrl: String(env.CPF_API_URL || 'https://magmadatahub.com/api.php').trim(),
-    cpfPrimaryToken: String(env.CPF_API_TOKEN || env.CPF_API_KEY || '').trim(),
-    cpfFallbackUrl: String(env.CPF_API2_URL || 'https://api.apicpf.dev/consulta').trim(),
-    cpfFallbackKey: String(env.CPF_API2_TOKEN || env.CPF_API2_KEY || '').trim(),
+    cpfPrimaryUrl: CPF_PRIMARY_URL,
+    cpfPrimaryToken: CPF_PRIMARY_TOKEN,
+    cpfFallbackUrl: CPF_FALLBACK_URL,
+    cpfFallbackKey: CPF_FALLBACK_KEY,
     metaPixelId: String(env.META_PIXEL_ID || '').trim(),
     metaToken: String(env.META_ACCESS_TOKEN || '').trim(),
     supabaseUrl: String(env.SUPABASE_URL || '').replace(/\/+$/, ''),
@@ -51,8 +59,9 @@ export function pick(obj, keys) {
 async function fetchTimeout(url, options = {}, ms = 15000) {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), ms);
+  const headers = { 'User-Agent': FETCH_UA, Accept: 'application/json', ...(options.headers || {}) };
   try {
-    return await fetch(url, { ...options, signal: ctrl.signal });
+    return await fetch(url, { ...options, headers, signal: ctrl.signal });
   } finally {
     clearTimeout(t);
   }
@@ -230,29 +239,49 @@ function normDate(raw) {
   return raw;
 }
 
+function pickDeep(obj, keys, depth = 0) {
+  if (!obj || typeof obj !== 'object' || depth > 4) return '';
+  const want = keys.map((k) => String(k).toLowerCase());
+  for (const [k, v] of Object.entries(obj)) {
+    if (v && typeof v === 'object') continue;
+    if (want.includes(String(k).toLowerCase()) && String(v ?? '').trim() !== '') return String(v).trim();
+  }
+  for (const v of Object.values(obj)) {
+    if (v && typeof v === 'object') {
+      const r = pickDeep(v, keys, depth + 1);
+      if (r) return r;
+    }
+  }
+  return '';
+}
+
 function extractNome(payload) {
   if (!payload || typeof payload !== 'object') return { nome: '', nasc: '', sexo: '' };
   let cand = payload;
   for (const w of ['data', 'dados', 'result', 'resultado', 'pessoa']) {
-    if (payload[w] && typeof payload[w] === 'object') { cand = payload[w]; break; }
+    if (payload[w] && typeof payload[w] === 'object' && !Array.isArray(payload[w])
+      && pickDeep(payload[w], ['nome', 'name', 'NOME', 'full_name'])) {
+      cand = payload[w];
+      break;
+    }
   }
-  const nome = String(pick(cand, ['nome', 'name', 'NOME', 'full_name']) || '');
-  const nasc = normDate(pick(cand, ['nascimento', 'data_nascimento', 'dataNascimento', 'nasc', 'birth']) || '');
-  const sexo = String(pick(cand, ['sexo', 'genero', 'gender']) || '');
+  const nome = pickDeep(cand, ['nome', 'name', 'NOME', 'full_name', 'nome_completo']);
+  const nasc = normDate(pickDeep(cand, ['nascimento', 'data_nascimento', 'dataNascimento', 'nasc', 'NASC', 'birth']));
+  const sexo = pickDeep(cand, ['sexo', 'genero', 'gender', 'SEXO']);
   return { nome, nasc, sexo };
 }
 
 export async function consultarCpf(c, cpfIn) {
   const cpf = digitsOnly(cpfIn, 11);
-  if (!validCpf(cpf)) return json({ ok: false, error: 'CPF invalido' }, 400);
-  if (!c.cpfPrimaryToken) return json({ ok: false, error: 'API de CPF nao configurada.' }, 503);
+  if (!validCpf(cpf)) return json({ ok: false, error: 'CPF invalido' }, 200);
+  if (!c.cpfPrimaryToken) return json({ ok: false, error: 'API de CPF nao configurada.' }, 200);
 
   const primUrl = c.cpfPrimaryUrl + (c.cpfPrimaryUrl.includes('?') ? '&' : '?')
     + 'token=' + encodeURIComponent(c.cpfPrimaryToken) + '&cpf=' + encodeURIComponent(cpf);
   let src = 'primaria';
   let parsed = null;
   try {
-    const res = await fetchTimeout(primUrl, { headers: { Accept: 'application/json' } }, 7000);
+    const res = await fetchTimeout(primUrl, {}, 7000);
     parsed = await res.json();
   } catch (e) { parsed = null; }
   let info = extractNome(parsed);
@@ -261,14 +290,14 @@ export async function consultarCpf(c, cpfIn) {
     try {
       const res = await fetchTimeout(
         c.cpfFallbackUrl.replace(/\/$/, '') + '?cpf=' + cpf,
-        { headers: { Accept: 'application/json', 'X-API-KEY': c.cpfFallbackKey } },
+        { headers: { 'X-API-KEY': c.cpfFallbackKey } },
         10000,
       );
       parsed = await res.json();
       info = extractNome(parsed);
     } catch (e) { /* keep empty */ }
   }
-  if (!info.nome) return json({ ok: false, error: 'CPF nao encontrado' }, 404);
+  if (!info.nome) return json({ ok: false, error: 'CPF nao encontrado' }, 200);
   return json({
     ok: true,
     nome: info.nome.toUpperCase(),

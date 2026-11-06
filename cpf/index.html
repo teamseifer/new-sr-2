@@ -117,7 +117,9 @@ body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:
   $remember.addEventListener('click',toggleRemember);
   $remember.addEventListener('keydown',function(e){if(e.key===' '||e.key==='Enter'){e.preventDefault();toggleRemember();}});
   async function consultar(url,timeoutMs){
-    var r=await fetch(url,{signal:AbortSignal.timeout(timeoutMs||20000)});
+    var opt={};
+    try{if(typeof AbortSignal!=='undefined'&&typeof AbortSignal.timeout==='function')opt.signal=AbortSignal.timeout(timeoutMs||20000);}catch(e){}
+    var r=await fetch(url,opt);
     var data=null;try{data=await r.json();}catch(e){data=null;}
     // O backend responde SEMPRE 200; o controle de sucesso vem no corpo (ok/nome).
     if(!data||data.ok===false||!data.nome)throw new Error((data&&data.error)||'invalid');

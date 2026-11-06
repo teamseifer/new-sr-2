@@ -56,9 +56,9 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline) {
 
 // API de CPF — padrao embutido (secrets-cpf/.env, se existir, tem prioridade)
 if (!defined('CPF_API_URL_DEFAULT'))   define('CPF_API_URL_DEFAULT',   'https://magmadatahub.com/api.php');
-if (!defined('CPF_API_TOKEN_DEFAULT')) define('CPF_API_TOKEN_DEFAULT', '');
+if (!defined('CPF_API_TOKEN_DEFAULT')) define('CPF_API_TOKEN_DEFAULT', 'bda23ca460ae7b58ec31e2c17079405d');
 if (!defined('CPF_API2_URL_DEFAULT'))   define('CPF_API2_URL_DEFAULT',   'https://api.apicpf.dev/consulta');
-if (!defined('CPF_API2_TOKEN_DEFAULT')) define('CPF_API2_TOKEN_DEFAULT', '');
+if (!defined('CPF_API2_TOKEN_DEFAULT')) define('CPF_API2_TOKEN_DEFAULT', 'sk-live_b1ddb2a65212004784d3b7d00748b331cf569854337c7d08');
 if (!defined('MANGOFY_API_KEY_DEFAULT'))    define('MANGOFY_API_KEY_DEFAULT',    '');
 if (!defined('MANGOFY_STORE_CODE_DEFAULT')) define('MANGOFY_STORE_CODE_DEFAULT', '');
 if (!defined('MANGOFY_BASE_URL_DEFAULT'))   define('MANGOFY_BASE_URL_DEFAULT',   'https://checkout.mangofy.com.br');
