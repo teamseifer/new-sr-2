@@ -1,0 +1,12 @@
+.git
+.wrangler
+.private
+tests
+secrets-*
+**/*.php
+**/.DS_Store
+**/*.log
+supabase_setup.sql
+.env
+.env.example
+.gitkeep
