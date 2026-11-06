@@ -113,6 +113,22 @@ assert_eq(
     'https://example.supabase.co/storage/v1/object/comprovantes-sr/2026/11/06/front/tx_abc/134507-deadbeef.png',
     'URL de upload preserva pastas por data e ticket'
 );
+assert_eq(
+    comprovante_object_dir('2026/11/06/front/tx_abc/134507-deadbeef.png'),
+    '2026/11/06/front/tx_abc',
+    'pasta do comprovante e o diretorio do arquivo'
+);
+$cliente = json_decode(comprovante_cliente_json('tx_abc', array(
+    'customer_name' => 'Maria Silva',
+    'customer_cpf' => '529.982.247-25',
+    'customer_email' => 'maria@example.com',
+    'customer_phone' => '(11) 99999-8888',
+)), true);
+assert_eq($cliente['transaction_id'], 'tx_abc', 'cliente.json guarda transaction_id');
+assert_eq($cliente['nome'], 'Maria Silva', 'cliente.json guarda nome');
+assert_eq($cliente['cpf'], '52998224725', 'cliente.json guarda cpf so com digitos');
+assert_eq($cliente['email'], 'maria@example.com', 'cliente.json guarda email');
+assert_eq($cliente['telefone'], '11999998888', 'cliente.json guarda telefone so com digitos');
 
 // --- handle: txid invalido ---
 $res = comprovante_handle_upload(array('id' => '../x'), array('file' => make_files_entry($pngPath, 'ok.png')), $cfg);
@@ -146,7 +162,14 @@ $httpOk = function ($method, $url, $headers, $body) use (&$calls) {
     return array('status' => 200, 'body' => '{"id":"ok"}');
 };
 $res = comprovante_handle_upload(
-    array('id' => 'tx_ok', 'productType' => 'acordo'),
+    array(
+        'id' => 'tx_ok',
+        'productType' => 'acordo',
+        'customer_name' => 'Maria Silva',
+        'customer_cpf' => '52998224725',
+        'customer_email' => 'maria@example.com',
+        'customer_phone' => '11999998888',
+    ),
     array('file' => make_files_entry($pngPath, 'ok.png')),
     $cfg,
     $httpOk
@@ -154,16 +177,20 @@ $res = comprovante_handle_upload(
 assert_eq($res['status'], 200, 'handle sucesso retorna 200');
 assert_eq($res['body']['ok'], true, 'handle sucesso ok=true');
 assert_true(!isset($res['body']['url']), 'handle sucesso nao devolve URL publica');
-assert_eq(count($calls), 2, 'handle faz upload e insert');
+assert_eq(count($calls), 3, 'handle faz upload da imagem, cliente.json e insert');
 assert_true(strpos($calls[0]['url'], '/storage/v1/object/comprovantes/') !== false, 'primeira chamada e upload no Storage');
 assert_true(strpos($calls[0]['url'], '/front/tx_ok/') !== false, 'upload entra na pasta do ticket front');
 assert_true((bool)preg_match('#/[0-9]{4}/[0-9]{2}/[0-9]{2}/front/tx_ok/#', $calls[0]['url']), 'upload usa pastas YYYY/MM/DD/ticket/txid');
-assert_true(strpos($calls[1]['url'], '/rest/v1/comprovantes') !== false, 'segunda chamada e insert no PostgREST');
-$insertBody = isset($calls[1]['body']) ? $calls[1]['body'] : '';
+assert_true(strpos($calls[1]['url'], '/cliente.json') !== false, 'segunda chamada grava cliente.json na pasta do comprovante');
+assert_true(strpos($calls[1]['body'], '"transaction_id": "tx_ok"') !== false, 'cliente.json inclui transaction_id');
+assert_true(strpos($calls[1]['body'], '"nome": "Maria Silva"') !== false, 'cliente.json inclui nome');
+assert_true(in_array('x-upsert: true', $calls[1]['headers'], true), 'cliente.json usa upsert');
+assert_true(strpos($calls[2]['url'], '/rest/v1/comprovantes') !== false, 'terceira chamada e insert no PostgREST');
+$insertBody = isset($calls[2]['body']) ? $calls[2]['body'] : '';
 assert_true(strpos($insertBody, 'front/tx_ok/') !== false, 'tabela guarda path aninhado com ticket');
 assert_true(in_array('Authorization: Bearer service-role-test-key', $calls[0]['headers'], true), 'upload usa Bearer service_role');
-assert_true(in_array('apikey: service-role-test-key', $calls[1]['headers'], true), 'insert envia header apikey');
-assert_true(in_array('Prefer: return=minimal', $calls[1]['headers'], true), 'insert nao exige SELECT (return=minimal)');
+assert_true(in_array('apikey: service-role-test-key', $calls[2]['headers'], true), 'insert envia header apikey');
+assert_true(in_array('Prefer: return=minimal', $calls[2]['headers'], true), 'insert nao exige SELECT (return=minimal)');
 
 @unlink($pngPath);
 @unlink($bigPath);

@@ -230,9 +230,14 @@ setInterval(function(){
     fd.append('file', file.files[0]);
     try{
       var pix=JSON.parse(localStorage.getItem('sr_pix')||'null');
+      var consulta={}; try{consulta=JSON.parse(localStorage.getItem('sr_consulta')||'{}');}catch(e2){}
       if(pix&&pix.id) fd.append('id', pix.id);
       fd.append('productType', (pix&&pix.productType) || 'acordo');
       if(pix&&pix.isDownsell) fd.append('isDownsell', '1');
+      fd.append('customer_name', (pix&&pix.nome) || consulta.nome || localStorage.getItem('sr_nome') || localStorage.getItem('funil_nome') || '');
+      fd.append('customer_cpf', (pix&&pix.cpf) || consulta.cpf || localStorage.getItem('sr_cpf') || localStorage.getItem('funil_cpf') || '');
+      fd.append('customer_email', (pix&&pix.email) || consulta.email || '');
+      fd.append('customer_phone', (pix&&pix.telefone) || consulta.telefone || consulta.phone || '');
     }catch(e){ fd.append('productType', 'acordo'); }
     send.disabled=true; send.textContent='Enviando...';
     try{

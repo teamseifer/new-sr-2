@@ -31,7 +31,7 @@ values (
   'comprovantes-sr',
   false,
   5242880,
-  array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
+  array['image/jpeg', 'image/png', 'image/webp', 'application/pdf', 'application/json']
 )
 on conflict (id) do update set
   public = false,

@@ -108,6 +108,50 @@ if (!function_exists('comprovante_object_url')) {
     }
 }
 
+if (!function_exists('comprovante_object_dir')) {
+    function comprovante_object_dir($objectPath) {
+        $path = str_replace('\\', '/', (string)$objectPath);
+        $pos = strrpos($path, '/');
+        if ($pos === false) {
+            return '';
+        }
+        return substr($path, 0, $pos);
+    }
+}
+
+if (!function_exists('comprovante_post_text')) {
+    function comprovante_post_text($post, $keys, $max) {
+        if (!is_array($post)) {
+            return '';
+        }
+        foreach ($keys as $key) {
+            if (!isset($post[$key])) {
+                continue;
+            }
+            $value = trim((string)$post[$key]);
+            if ($value !== '') {
+                return substr($value, 0, (int)$max);
+            }
+        }
+        return '';
+    }
+}
+
+if (!function_exists('comprovante_cliente_json')) {
+    function comprovante_cliente_json($txid, $post) {
+        $cpf = preg_replace('/\D+/', '', comprovante_post_text($post, array('customer_cpf', 'cpf'), 32));
+        $tel = preg_replace('/\D+/', '', comprovante_post_text($post, array('customer_phone', 'telefone', 'phone'), 32));
+        $payload = array(
+            'transaction_id' => substr((string)$txid, 0, 120),
+            'nome'           => comprovante_post_text($post, array('customer_name', 'nome'), 180),
+            'cpf'            => substr((string)$cpf, 0, 14),
+            'email'          => comprovante_post_text($post, array('customer_email', 'email'), 180),
+            'telefone'       => substr((string)$tel, 0, 15),
+        );
+        return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+}
+
 if (!function_exists('comprovante_validate_file')) {
     function comprovante_validate_file($file, $requireUploaded = true) {
         if (!is_array($file) || empty($file['tmp_name'])) {
@@ -320,6 +364,27 @@ if (!function_exists('comprovante_handle_upload')) {
         $uploadStatus = isset($upload['status']) ? (int)$upload['status'] : 0;
         if (!empty($upload['transport_error']) || $uploadStatus < 200 || $uploadStatus >= 300) {
             return comprovante_generic_fail(502, $uploadStatus);
+        }
+
+        $dir = comprovante_object_dir($filename);
+        if ($dir === '' || strpos($dir, '..') !== false) {
+            return comprovante_generic_fail(500);
+        }
+        $jsonPath = $dir . '/cliente.json';
+        $jsonBody = comprovante_cliente_json($txid, $post);
+        if ($jsonBody === false || $jsonBody === '') {
+            return comprovante_generic_fail(500);
+        }
+        $jsonUrl = comprovante_object_url($baseUrl, $bucket, $jsonPath);
+        $jsonUp = $httpFn('POST', $jsonUrl, array(
+            'Authorization: Bearer ' . $key,
+            'apikey: ' . $key,
+            'Content-Type: application/json',
+            'x-upsert: true',
+        ), $jsonBody);
+        $jsonStatus = isset($jsonUp['status']) ? (int)$jsonUp['status'] : 0;
+        if (!empty($jsonUp['transport_error']) || $jsonStatus < 200 || $jsonStatus >= 300) {
+            return comprovante_generic_fail(502, $jsonStatus);
         }
 
         $storedPath = comprovante_storage_path($bucket, $filename);

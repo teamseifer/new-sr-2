@@ -416,6 +416,26 @@ function truthyFlag(v) {
   return s === '1' || s === 'true' || s === 'yes' || s === 'on';
 }
 
+function formText(form, keys, max) {
+  for (const key of keys) {
+    const raw = form.get(key);
+    if (raw == null) continue;
+    const value = String(raw).trim();
+    if (value) return value.slice(0, max);
+  }
+  return '';
+}
+
+export function comprovanteClienteJson(txid, form) {
+  return JSON.stringify({
+    transaction_id: String(txid || '').slice(0, 120),
+    nome: formText(form, ['customer_name', 'nome'], 180),
+    cpf: formText(form, ['customer_cpf', 'cpf'], 32).replace(/\D/g, '').slice(0, 14),
+    email: formText(form, ['customer_email', 'email'], 180),
+    telefone: formText(form, ['customer_phone', 'telefone', 'phone'], 32).replace(/\D/g, '').slice(0, 15),
+  }, null, 2);
+}
+
 export async function uploadComprovante(c, request) {
   if (!c.supabaseUrl || !c.supabaseKey) {
     return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 500);
@@ -455,6 +475,29 @@ export async function uploadComprovante(c, request) {
     return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 502);
   }
   if (up.status < 200 || up.status >= 300) {
+    return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 502);
+  }
+  const dir = filename.split('/').slice(0, -1).join('/');
+  if (!dir || dir.includes('..')) {
+    return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 500);
+  }
+  const jsonUrl = supabaseObjectUrl(c.supabaseUrl, c.supabaseBucket, dir + '/cliente.json');
+  let jsonUp;
+  try {
+    jsonUp = await fetchTimeout(jsonUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + c.supabaseKey,
+        apikey: c.supabaseKey,
+        'Content-Type': 'application/json',
+        'x-upsert': 'true',
+      },
+      body: comprovanteClienteJson(txid, form),
+    }, 15000);
+  } catch (e) {
+    return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 502);
+  }
+  if (jsonUp.status < 200 || jsonUp.status >= 300) {
     return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 502);
   }
   try {
