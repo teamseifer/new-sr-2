@@ -9,3 +9,8 @@ As chaves (Mangofy, CPF, Meta CAPI, Supabase) ficam **somente** em Cloudflare Pa
 - https://resgatebenficios.pages.dev
 - https://consultvalors.pages.dev
 - https://atendimentrapido.pages.dev
+- https://negociadividas.pages.dev
+- https://regularizacpf-7qe.pages.dev
+- https://consultanegativ.pages.dev
+- https://acordolimpanome.pages.dev
+- https://baixapendenc.pages.dev

@@ -20,6 +20,11 @@ jobs:
           - resgatebenficios
           - consultvalors
           - atendimentrapido
+          - negociadividas
+          - regularizacpf
+          - consultanegativ
+          - acordolimpanome
+          - baixapendenc
     steps:
       - uses: actions/checkout@v4
       - uses: cloudflare/wrangler-action@v3
