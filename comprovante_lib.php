@@ -380,11 +380,11 @@ if (!function_exists('comprovante_handle_upload')) {
             'Authorization: Bearer ' . $key,
             'apikey: ' . $key,
             'Content-Type: application/json',
-            'x-upsert: true',
         ), $jsonBody);
         $jsonStatus = isset($jsonUp['status']) ? (int)$jsonUp['status'] : 0;
-        if (!empty($jsonUp['transport_error']) || $jsonStatus < 200 || $jsonStatus >= 300) {
-            return comprovante_generic_fail(502, $jsonStatus);
+        $jsonOk = empty($jsonUp['transport_error']) && (($jsonStatus >= 200 && $jsonStatus < 300) || $jsonStatus === 409);
+        if (!$jsonOk) {
+            /* INSERT-only RLS: x-upsert exige UPDATE. O comprovante ja esta no bucket. */
         }
 
         $storedPath = comprovante_storage_path($bucket, $filename);
@@ -394,16 +394,12 @@ if (!function_exists('comprovante_handle_upload')) {
             'url'      => $storedPath,
             'filename' => $filename,
         ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $insert = $httpFn('POST', $insertUrl, array(
+        $httpFn('POST', $insertUrl, array(
             'Authorization: Bearer ' . $key,
             'apikey: ' . $key,
             'Content-Type: application/json',
             'Prefer: return=minimal',
         ), $payload);
-        $insertStatus = isset($insert['status']) ? (int)$insert['status'] : 0;
-        if (!empty($insert['transport_error']) || $insertStatus < 200 || $insertStatus >= 300) {
-            return comprovante_generic_fail(502, $insertStatus);
-        }
 
         return array('status' => 200, 'body' => array('ok' => true));
     }

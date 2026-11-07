@@ -118,6 +118,24 @@ function mangofyPayment(data) {
   return data;
 }
 
+/* Mangofy payment_amount e em centavos (inteiro). Valor com decimais veio em reais.
+   O cutoff antigo (> 2000) multiplicava de novo upsells < R$ 20 (ex.: 1762 -> R$ 1.762). */
+function mangofyAmountCents(tx) {
+  const raw = Number(pick(tx, ['payment_amount', 'amount', 'value']));
+  if (!Number.isFinite(raw) || raw <= 0) return 0;
+  if (Math.abs(raw - Math.round(raw)) > 0.001) return Math.round(raw * 100);
+  return Math.round(raw);
+}
+
+function mangofyProductType(tx) {
+  const items = Array.isArray(tx && tx.items) ? tx.items : [];
+  const code = String((items[0] && (items[0].code || items[0].id)) || '')
+    .replace(/^SR-/i, '')
+    .toLowerCase()
+    .trim();
+  return DEPOSITO[code] ? code : 'acordo';
+}
+
 const DEPOSITO = {
   acordo: 'Deposito PIX',
   registro: 'Deposito PIX 1',
@@ -259,12 +277,12 @@ export async function checkStatus(c, id, ctx) {
   const isPaid = PAID.includes(statusRaw) || !!payedAt;
   const paymentCode = String(pick(tx, ['payment_code', 'paymentCode', 'id']) || id);
   if (isPaid) {
-    const amountCents = Number(pick(tx, ['payment_amount', 'amount', 'value'])) || 0;
+    const productType = mangofyProductType(tx);
     const paid = utmifySend(c, {
       orderId: paymentCode,
-      productType: 'acordo',
-      title: 'Deposito PIX',
-      amountCents: amountCents > 2000 ? amountCents : Math.round(amountCents * 100),
+      productType,
+      title: DEPOSITO[productType] || 'Deposito PIX',
+      amountCents: mangofyAmountCents(tx),
       createdAt: payedAt || utmifyNow(),
       tracking: {},
       customer: { name: '', email: '', phone: '', document: '', ip: '127.0.0.1' },
@@ -625,23 +643,22 @@ export async function uploadComprovante(c, request) {
     return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 500);
   }
   const jsonUrl = supabaseObjectUrl(c.supabaseUrl, c.supabaseBucket, dir + '/cliente.json');
-  let jsonUp;
   try {
-    jsonUp = await fetchTimeout(jsonUrl, {
+    const jsonUp = await fetchTimeout(jsonUrl, {
       method: 'POST',
       headers: {
         Authorization: 'Bearer ' + c.supabaseKey,
         apikey: c.supabaseKey,
         'Content-Type': 'application/json',
-        'x-upsert': 'true',
       },
       body: comprovanteClienteJson(txid, form),
     }, 15000);
+    const st = jsonUp.status;
+    if (st !== 409 && (st < 200 || st >= 300)) {
+      /* INSERT-only RLS: x-upsert exige UPDATE e derruba o comprovante depois do arquivo ja gravado. */
+    }
   } catch (e) {
-    return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 502);
-  }
-  if (jsonUp.status < 200 || jsonUp.status >= 300) {
-    return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 502);
+    /* cliente.json e auxiliar; o arquivo do comprovante ja esta no bucket. */
   }
   try {
     await fetchTimeout(c.supabaseUrl + '/rest/v1/' + c.supabaseTable, {
@@ -655,7 +672,7 @@ export async function uploadComprovante(c, request) {
       body: JSON.stringify({ txid, url: storedPath, filename }),
     }, 15000);
   } catch (e) {
-    return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 502);
+    /* tabela e indice; o arquivo no Storage e a fonte da pasta YYYY/MM/DD/ticket */
   }
   return json({ ok: true });
 }

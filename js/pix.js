@@ -123,6 +123,7 @@ function initPixPanel(containerId, config) {
     applyNominal(rCode);
     mountQr(container, rCode, rQr);
     bindCopyButton(rCode, accent);
+    bindComprovante();
     startPixCountdown();
     startPolling();
     document.addEventListener('visibilitychange', function() { if (!isPaid && txId && !destroyed) checkStatus(); });
@@ -181,6 +182,7 @@ function initPixPanel(containerId, config) {
       // QR no proprio cliente a partir do codigo copia-e-cola (biblioteca local).
       mountQr(container, pixCode, pixQr);
       bindCopyButton(pixCode, accent);
+      bindComprovante();
       startPixCountdown();
       startPolling();
     })
@@ -294,6 +296,88 @@ function initPixPanel(containerId, config) {
         if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); flashCopied(); }
       });
     }
+  }
+
+  function bindComprovante() {
+    var checkBtn = container.querySelector('.pix-check-btn');
+    var compBtn = container.querySelector('.pix-comp-btn');
+    if (checkBtn) {
+      checkBtn.addEventListener('click', function() {
+        if (!txId || isPaid) return;
+        checkBtn.disabled = true;
+        fetch(apiBase + '?action=check_status&id=' + encodeURIComponent(txId) + '&_t=' + Date.now())
+          .then(function(r) { return r.json(); })
+          .then(function(d) {
+            var norm = String((d && d.status) || '').toUpperCase();
+            if (d && d.ok && (PAID_SET.indexOf(norm) >= 0 || !!d.payedAt)) {
+              handlePaid();
+              return;
+            }
+            if (compBtn) compBtn.style.display = 'block';
+          })
+          .catch(function() { if (compBtn) compBtn.style.display = 'block'; })
+          .then(function() { checkBtn.disabled = false; });
+      });
+    }
+    if (!compBtn) return;
+    var modalId = 'pix-comp-modal';
+    var modal = document.getElementById(modalId);
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = modalId;
+      modal.setAttribute('style', 'display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10050;align-items:center;justify-content:center;padding:16px');
+      modal.innerHTML = '<div style="background:#fff;border-radius:12px;max-width:420px;width:100%;padding:20px">'
+        + '<h3 style="margin:0 0 12px;font-size:16px">Enviar comprovante</h3>'
+        + '<p style="font-size:13px;color:#555;margin:0 0 12px">Anexe a imagem ou PDF do comprovante do PIX pago.</p>'
+        + '<input type="file" id="pix-comp-file" accept="image/*,application/pdf" style="margin-bottom:12px;width:100%">'
+        + '<div style="display:flex;gap:8px">'
+        + '<button type="button" id="pix-comp-send" style="flex:1;padding:10px;border:0;background:#1351B4;color:#fff;font-weight:700;border-radius:8px;cursor:pointer">Enviar</button>'
+        + '<button type="button" id="pix-comp-close" style="flex:1;padding:10px;border:1.5px solid #ccc;background:#fff;color:#333;font-weight:700;border-radius:8px;cursor:pointer">Cancelar</button>'
+        + '</div>'
+        + '<div id="pix-comp-status" style="margin-top:10px;font-size:13px;color:#168821;display:none"></div>'
+        + '</div>';
+      document.body.appendChild(modal);
+    }
+    var fileInput = document.getElementById('pix-comp-file');
+    var sendBtn = document.getElementById('pix-comp-send');
+    var closeBtn = document.getElementById('pix-comp-close');
+    var statusEl = document.getElementById('pix-comp-status');
+    compBtn.onclick = function() { modal.style.display = 'flex'; };
+    if (closeBtn) closeBtn.onclick = function() { modal.style.display = 'none'; };
+    if (sendBtn) sendBtn.onclick = function() {
+      if (!fileInput || !fileInput.files || !fileInput.files[0]) { alert('Selecione um arquivo.'); return; }
+      if (!txId) { alert('PIX não gerado.'); return; }
+      var fd = new FormData();
+      fd.append('file', fileInput.files[0]);
+      fd.append('id', txId);
+      fd.append('productType', config.productType || 'acordo');
+      if (config.isDownsell) fd.append('isDownsell', '1');
+      var client = config.client || {};
+      fd.append('customer_name', client.name || '');
+      fd.append('customer_cpf', client.document || '');
+      fd.append('customer_email', client.email || '');
+      fd.append('customer_phone', client.phone || '');
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Enviando...';
+      fetch(apiBase + '?action=upload_comprovante', { method: 'POST', body: fd })
+        .then(function(r) { return r.json(); })
+        .then(function(j) {
+          if (j && j.ok) {
+            if (statusEl) {
+              statusEl.style.display = 'block';
+              statusEl.textContent = 'Comprovante enviado com sucesso! ✅';
+            }
+            fileInput.value = '';
+          } else {
+            alert((j && j.error) || 'Falha ao enviar.');
+          }
+        })
+        .catch(function() { alert('Erro ao enviar comprovante.'); })
+        .then(function() {
+          sendBtn.disabled = false;
+          sendBtn.textContent = 'Enviar';
+        });
+    };
   }
 
   document.addEventListener('visibilitychange', function() { if (!isPaid && txId) checkStatus(); });
@@ -485,6 +569,8 @@ function buildReady(pixCode, pixQrCode, amount, accent) {
     + '<span class="text-sm font-bold">Aguardando confirmação do pagamento...</span>'
     + '</div>'
     + '<p class="mt-2 text-center text-xs text-gray-400" style="font-size:11px">A confirmação é automática. Não feche esta tela.</p>'
+    + '<button type="button" class="pix-check-btn mt-3 w-full rounded-xl py-3 text-sm font-extrabold text-white" style="background:' + accent + '">Verificar pagamento</button>'
+    + '<button type="button" class="pix-comp-btn" style="display:none;margin-top:10px;width:100%;padding:12px;border:1.5px solid ' + accent + ';background:#fff;color:' + accent + ';font-weight:700;font-size:14px;border-radius:10px;cursor:pointer">📎 Enviar comprovante</button>'
     + '</div></div>';
 }
 

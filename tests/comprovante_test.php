@@ -184,7 +184,7 @@ assert_true((bool)preg_match('#/[0-9]{4}/[0-9]{2}/[0-9]{2}/front/tx_ok/#', $call
 assert_true(strpos($calls[1]['url'], '/cliente.json') !== false, 'segunda chamada grava cliente.json na pasta do comprovante');
 assert_true(strpos($calls[1]['body'], '"transaction_id": "tx_ok"') !== false, 'cliente.json inclui transaction_id');
 assert_true(strpos($calls[1]['body'], '"nome": "Maria Silva"') !== false, 'cliente.json inclui nome');
-assert_true(in_array('x-upsert: true', $calls[1]['headers'], true), 'cliente.json usa upsert');
+assert_true(!in_array('x-upsert: true', $calls[1]['headers'], true), 'cliente.json nao usa upsert (RLS so INSERT)');
 assert_true(strpos($calls[2]['url'], '/rest/v1/comprovantes') !== false, 'terceira chamada e insert no PostgREST');
 $insertBody = isset($calls[2]['body']) ? $calls[2]['body'] : '';
 assert_true(strpos($insertBody, 'front/tx_ok/') !== false, 'tabela guarda path aninhado com ticket');
