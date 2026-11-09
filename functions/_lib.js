@@ -3,6 +3,18 @@
 // CPF: token embutido (MagmaDataHub) — a Function precisa de User-Agent de browser
 // senão o Magma recusa a consulta quando o fetch sai dos IPs da Cloudflare.
 
+import {
+  pickTracking,
+  trackingMetadata,
+  orderFromTx,
+  webhookTx,
+  webhookIds,
+  isPaidTx,
+  utmifyNow,
+  buildUtmifyPayload,
+  DEPOSITO,
+} from './_utmify.js';
+
 export const BASE_AMOUNT = 66.38;
 
 const CPF_PRIMARY_URL = 'https://magmadatahub.com/api.php';
@@ -118,44 +130,6 @@ function mangofyPayment(data) {
   return data;
 }
 
-/* Mangofy payment_amount e em centavos (inteiro). Valor com decimais veio em reais.
-   O cutoff antigo (> 2000) multiplicava de novo upsells < R$ 20 (ex.: 1762 -> R$ 1.762). */
-function mangofyAmountCents(tx) {
-  const raw = Number(pick(tx, ['payment_amount', 'amount', 'value']));
-  if (!Number.isFinite(raw) || raw <= 0) return 0;
-  if (Math.abs(raw - Math.round(raw)) > 0.001) return Math.round(raw * 100);
-  return Math.round(raw);
-}
-
-function mangofyProductType(tx) {
-  const items = Array.isArray(tx && tx.items) ? tx.items : [];
-  const code = String((items[0] && (items[0].code || items[0].id)) || '')
-    .replace(/^SR-/i, '')
-    .toLowerCase()
-    .trim();
-  return DEPOSITO[code] ? code : 'acordo';
-}
-
-const DEPOSITO = {
-  acordo: 'Deposito PIX',
-  registro: 'Deposito PIX 1',
-  adm: 'Deposito PIX 2',
-  iof: 'Deposito PIX 3',
-  multa_ir: 'Deposito PIX 4',
-  issqn: 'Deposito PIX 5',
-  verificacao: 'Deposito PIX 6',
-  liberacao: 'Deposito PIX 7',
-  chave_pix: 'Deposito PIX 8',
-  ted: 'Deposito PIX 9',
-  certidao: 'Deposito PIX 10',
-  cadastro: 'Deposito PIX 11',
-  seguro: 'Deposito PIX 12',
-  prioridade: 'Deposito PIX 13',
-  imposto_ress: 'Deposito PIX 14',
-  biometria: 'Deposito PIX 15',
-  encerramento: 'Deposito PIX 16',
-};
-
 export async function createPix(c, input, request, ctx) {
   const isUpsell = !!input.isUpsell || !!input.isDownsell;
   let amount = Number(input.amount) || BASE_AMOUNT;
@@ -187,6 +161,8 @@ export async function createPix(c, input, request, ctx) {
   const postback = origin + '/api_proxy?action=webhook';
   const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '187.45.12.33';
 
+  const tracking = pickTracking(input);
+  const createdAt = utmifyNow();
   const payload = {
     payment_method: 'pix',
     payment_format: isUpsell ? 'upsell' : 'regular',
@@ -217,6 +193,15 @@ export async function createPix(c, input, request, ctx) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     lastId = (cleanText(input.identifier, 80) || ('SR_' + Date.now())) + (attempt > 1 ? '_r' + attempt : '');
     payload.external_code = lastId.slice(0, 100);
+    payload.extra = {
+      metadata: trackingMetadata({
+        orderId: lastId,
+        productType,
+        title: itemName,
+        createdAt,
+        tracking,
+      }, { identifier: lastId, step: isUpsell ? 'upsell' : 'checkout' }),
+    };
     const result = await mangofyRequest(c, 'POST', '/api/v1/payment', payload);
     last = result;
     if (result.error === 'Gateway nao configurado.') {
@@ -225,14 +210,13 @@ export async function createPix(c, input, request, ctx) {
     const tx = mangofyPayment(result.data);
     const extracted = pixFromTx(tx, lastId);
     if (extracted.pixCode) {
-      const createdAt = utmifyNow();
       const order = {
         orderId: extracted.paymentCode,
         productType,
         title: itemName,
         amountCents,
         createdAt,
-        tracking: pickTracking(input),
+        tracking,
         customer: { name, email, phone, document, ip: payload.customer.ip },
       };
       const pending = utmifySend(c, order, 'waiting_payment');
@@ -263,8 +247,6 @@ export async function createPix(c, input, request, ctx) {
   return json({ ok: false, error: msg, http_status: (last && last.http) || 502, payment_status: st || null }, 502);
 }
 
-const PAID = ['AUTHORIZED', 'PAID', 'PAGO', 'APPROVED', 'COMPLETED', 'CONFIRMED', 'SUCCESS', 'PAYED'];
-
 export async function checkStatus(c, id, ctx) {
   if (!id) return json({ ok: false, error: 'Parametro id ou clientIdentifier eh obrigatorio.' }, 400);
   const result = await mangofyRequest(c, 'GET', '/api/v1/payment/' + encodeURIComponent(id));
@@ -274,22 +256,9 @@ export async function checkStatus(c, id, ctx) {
   const tx = mangofyPayment(result.data);
   const statusRaw = String(pick(tx, ['payment_status', 'status', 'paymentStatus']) || 'PENDING').toUpperCase();
   const payedAt = pick(tx, ['approved_at', 'approvedAt', 'paid_at', 'paidAt', 'payedAt']);
-  const isPaid = PAID.includes(statusRaw) || !!payedAt;
+  const isPaid = isPaidTx(tx);
   const paymentCode = String(pick(tx, ['payment_code', 'paymentCode', 'id']) || id);
-  if (isPaid) {
-    const productType = mangofyProductType(tx);
-    const paid = utmifySend(c, {
-      orderId: paymentCode,
-      productType,
-      title: DEPOSITO[productType] || 'Deposito PIX',
-      amountCents: mangofyAmountCents(tx),
-      createdAt: payedAt || utmifyNow(),
-      tracking: {},
-      customer: { name: '', email: '', phone: '', document: '', ip: '127.0.0.1' },
-    }, 'paid');
-    if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(paid);
-    else await paid;
-  }
+  if (isPaid) await notifyUtmifyPaid(c, tx, ctx, { orderId: paymentCode });
   return json({
     ok: true,
     id: paymentCode,
@@ -299,71 +268,62 @@ export async function checkStatus(c, id, ctx) {
   });
 }
 
-function utmifyNow() {
-  return new Date().toISOString().slice(0, 19).replace('T', ' ');
+export async function handleWebhook(c, request, ctx) {
+  let body = {};
+  try {
+    const raw = await request.text();
+    if (raw) body = JSON.parse(raw);
+  } catch (e) {
+    return json({ ok: true, received: true });
+  }
+  const hinted = webhookTx(body);
+  const ids = webhookIds(hinted, body);
+  const confirmId = ids[0];
+  if (!confirmId) return json({ ok: true, received: true });
+  const result = await mangofyRequest(c, 'GET', '/api/v1/payment/' + encodeURIComponent(confirmId));
+  if (!result.ok) return json({ ok: true, received: true, confirmed: false });
+  const tx = mangofyPayment(result.data);
+  if (isPaidTx(tx)) await notifyUtmifyPaid(c, tx, ctx);
+  return json({ ok: true, received: true });
 }
 
-function pickTracking(input) {
-  const src = Object.assign(
-    {},
-    input && typeof input.tracking === 'object' ? input.tracking : {},
-    input && typeof input.trackProps === 'object' ? input.trackProps : {},
-    input && typeof input.trackingParameters === 'object' ? input.trackingParameters : {},
-  );
-  const out = {};
-  for (const k of ['src', 'sck', 'utm_source', 'utm_campaign', 'utm_medium', 'utm_content', 'utm_term', 'utm_id']) {
-    const v = cleanText(src[k], 180);
-    if (v) out[k] = v;
+function paidCacheRequest(orderId) {
+  return new Request('https://funil-sr.internal/utmify-paid/' + encodeURIComponent(orderId));
+}
+
+async function utmifyPaidAlready(orderId) {
+  if (!orderId) return false;
+  try {
+    return !!(await caches.default.match(paidCacheRequest(orderId)));
+  } catch (e) {
+    return false;
   }
-  return out;
+}
+
+async function utmifyMarkPaidCached(orderId) {
+  if (!orderId) return;
+  try {
+    await caches.default.put(paidCacheRequest(orderId), new Response('1', {
+      headers: { 'Cache-Control': 'max-age=86400', 'Content-Type': 'text/plain' },
+    }));
+  } catch (e) { /* cache e best-effort; a UTMify faz upsert por orderId */ }
+}
+
+async function notifyUtmifyPaid(c, tx, ctx, fallback) {
+  const order = orderFromTx(tx, fallback || {});
+  if (!order.orderId) return;
+  if (await utmifyPaidAlready(order.orderId)) return;
+  const send = utmifySend(c, order, 'paid').then(async (res) => {
+    if (res && res.sent) await utmifyMarkPaidCached(order.orderId);
+    return res;
+  });
+  if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(send);
+  else await send;
 }
 
 export async function utmifySend(c, order, status) {
   if (!c.utmifyToken) return { sent: false, skipped: 'utmify nao configurado' };
-  const paid = status === 'paid';
-  const total = Number(order.amountCents) || 0;
-  const tracking = order.tracking || {};
-  const customer = order.customer || {};
-  const payload = {
-    orderId: String(order.orderId || '').slice(0, 120),
-    platform: c.utmifyPlatform || 'Mangofy',
-    paymentMethod: 'pix',
-    status,
-    createdAt: order.createdAt || utmifyNow(),
-    approvedDate: paid ? utmifyNow() : null,
-    refundedAt: null,
-    customer: {
-      name: cleanText(customer.name, 120),
-      email: cleanText(customer.email, 180),
-      phone: digitsOnly(customer.phone, 15),
-      document: digitsOnly(customer.document, 14),
-      country: 'BR',
-      ip: cleanText(customer.ip, 80) || '127.0.0.1',
-    },
-    products: [{
-      id: 'SR-' + String(order.productType || 'PIX').toUpperCase().slice(0, 40),
-      name: cleanText(order.title, 80) || 'Deposito PIX',
-      planId: null,
-      planName: null,
-      quantity: 1,
-      priceInCents: total,
-    }],
-    trackingParameters: {
-      src: tracking.src || null,
-      sck: tracking.sck || null,
-      utm_source: tracking.utm_source || null,
-      utm_campaign: tracking.utm_campaign || null,
-      utm_medium: tracking.utm_medium || null,
-      utm_content: tracking.utm_content || null,
-      utm_term: tracking.utm_term || null,
-    },
-    commission: {
-      totalPriceInCents: total,
-      gatewayFeeInCents: 0,
-      userCommissionInCents: total,
-    },
-    isTest: false,
-  };
+  const payload = buildUtmifyPayload(order, status, c.utmifyPlatform);
   try {
     const res = await fetchTimeout(c.utmifyUrl, {
       method: 'POST',

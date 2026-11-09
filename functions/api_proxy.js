@@ -1,5 +1,5 @@
 import {
-  cfg, json, createPix, checkStatus, consultarCpf, trackSale, uploadComprovante,
+  cfg, json, createPix, checkStatus, consultarCpf, trackSale, uploadComprovante, handleWebhook,
 } from './_lib.js';
 
 export async function onRequest(context) {
@@ -19,6 +19,7 @@ export async function onRequest(context) {
         php_version: 'pages-functions',
         curl_enabled: true,
         mangofy: !!(c.mangofyKey && c.mangofyStore),
+        utmify: !!c.utmifyToken,
       });
     }
     if (action === 'create_pix') {
@@ -48,7 +49,7 @@ export async function onRequest(context) {
       return json({ ok: true, sid: crypto.randomUUID() });
     }
     if (action === 'webhook') {
-      return json({ ok: true, received: true });
+      return await handleWebhook(c, request, context);
     }
     return json({ ok: false, error: 'Acao desconhecida.' }, 400);
   } catch (e) {
