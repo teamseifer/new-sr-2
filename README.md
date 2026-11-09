@@ -14,3 +14,8 @@ As chaves (Mangofy, CPF, Meta CAPI, Supabase) ficam **somente** em Cloudflare Pa
 - https://consultanegativ.pages.dev
 - https://acordolimpanome.pages.dev
 - https://baixapendenc.pages.dev
+- https://quitadividas.pages.dev
+- https://limpanegativ.pages.dev
+- https://consultscore.pages.dev
+- https://resolvependenc.pages.dev
+- https://acordofacil.pages.dev

@@ -25,6 +25,11 @@ jobs:
           - consultanegativ
           - acordolimpanome
           - baixapendenc
+          - quitadividas
+          - limpanegativ
+          - consultscore
+          - resolvependenc
+          - acordofacil
     steps:
       - uses: actions/checkout@v4
       - uses: cloudflare/wrangler-action@v3
