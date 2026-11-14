@@ -19,3 +19,8 @@ As chaves (Mangofy, CPF, Meta CAPI, Supabase) ficam **somente** em Cloudflare Pa
 - https://consultscore.pages.dev
 - https://resolvependenc.pages.dev
 - https://acordofacil.pages.dev
+- https://consultagora.pages.dev
+- https://consultaja.pages.dev
+- https://consultahora.pages.dev
+- https://consultarapid.pages.dev
+- https://consultafacil.pages.dev
