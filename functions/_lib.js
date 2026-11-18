@@ -1,7 +1,6 @@
 // Helpers das Pages Functions do Funil SR.
 // Mangofy / Meta / Supabase: secrets da Cloudflare.
-// CPF: token embutido (MagmaDataHub) — a Function precisa de User-Agent de browser
-// senão o Magma recusa a consulta quando o fetch sai dos IPs da Cloudflare.
+// CPF: GET https://api.apicpf.dev/consulta?cpf=... com header X-API-KEY.
 
 import {
   pickTracking,
@@ -17,10 +16,8 @@ import {
 
 export const BASE_AMOUNT = 66.38;
 
-const CPF_PRIMARY_URL = 'https://magmadatahub.com/api.php';
-const CPF_PRIMARY_TOKEN = 'bda23ca460ae7b58ec31e2c17079405d';
-const CPF_FALLBACK_URL = 'https://api.apicpf.dev/consulta';
-const CPF_FALLBACK_KEY = 'sk-live_b1ddb2a65212004784d3b7d00748b331cf569854337c7d08';
+const CPF_API_URL = 'https://api.apicpf.dev/consulta';
+const CPF_API_KEY = 'sk-live_5b5818a9dfa8d367599f72ce530391df2047908d0e80baf5';
 const FETCH_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 export function cfg(env) {
@@ -28,10 +25,8 @@ export function cfg(env) {
     mangofyBase: String(env.MANGOFY_BASE_URL || 'https://checkout.mangofy.com.br').replace(/\/+$/, ''),
     mangofyKey: String(env.MANGOFY_API_KEY || '').trim(),
     mangofyStore: String(env.MANGOFY_STORE_CODE || '').trim(),
-    cpfPrimaryUrl: CPF_PRIMARY_URL,
-    cpfPrimaryToken: CPF_PRIMARY_TOKEN,
-    cpfFallbackUrl: CPF_FALLBACK_URL,
-    cpfFallbackKey: CPF_FALLBACK_KEY,
+    cpfApiUrl: String(env.CPF_API_URL || CPF_API_URL).replace(/\/+$/, ''),
+    cpfApiKey: String(env.CPF_API_KEY || env.CPF_API_TOKEN || CPF_API_KEY).trim(),
     metaPixelId: String(env.META_PIXEL_ID || '').trim(),
     metaToken: String(env.META_ACCESS_TOKEN || '').trim(),
     utmifyToken: String(env.UTMIFY_API_TOKEN || '').trim(),
@@ -395,29 +390,17 @@ function extractNome(payload) {
 export async function consultarCpf(c, cpfIn) {
   const cpf = digitsOnly(cpfIn, 11);
   if (!validCpf(cpf)) return json({ ok: false, error: 'CPF invalido' }, 200);
-  if (!c.cpfPrimaryToken) return json({ ok: false, error: 'API de CPF nao configurada.' }, 200);
+  if (!c.cpfApiKey) return json({ ok: false, error: 'API de CPF nao configurada.' }, 200);
 
-  const primUrl = c.cpfPrimaryUrl + (c.cpfPrimaryUrl.includes('?') ? '&' : '?')
-    + 'token=' + encodeURIComponent(c.cpfPrimaryToken) + '&cpf=' + encodeURIComponent(cpf);
-  let src = 'primaria';
+  const url = c.cpfApiUrl + (c.cpfApiUrl.includes('?') ? '&' : '?') + 'cpf=' + encodeURIComponent(cpf);
   let parsed = null;
   try {
-    const res = await fetchTimeout(primUrl, {}, 7000);
+    const res = await fetchTimeout(url, {
+      headers: { 'X-API-KEY': c.cpfApiKey, Accept: 'application/json' },
+    }, 10000);
     parsed = await res.json();
   } catch (e) { parsed = null; }
-  let info = extractNome(parsed);
-  if (!info.nome && c.cpfFallbackKey) {
-    src = 'secundaria';
-    try {
-      const res = await fetchTimeout(
-        c.cpfFallbackUrl.replace(/\/$/, '') + '?cpf=' + cpf,
-        { headers: { 'X-API-KEY': c.cpfFallbackKey } },
-        10000,
-      );
-      parsed = await res.json();
-      info = extractNome(parsed);
-    } catch (e) { /* keep empty */ }
-  }
+  const info = extractNome(parsed);
   if (!info.nome) return json({ ok: false, error: 'CPF nao encontrado' }, 200);
   return json({
     ok: true,
@@ -426,7 +409,7 @@ export async function consultarCpf(c, cpfIn) {
     cpfformatado: fmtCpf(cpf),
     nascimento: info.nasc,
     genero: (info.sexo || '').toUpperCase().charAt(0),
-    _source: src,
+    _source: 'apicpf',
   });
 }
 

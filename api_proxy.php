@@ -55,10 +55,8 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline) {
 });
 
 // API de CPF — padrao embutido (secrets-cpf/.env, se existir, tem prioridade)
-if (!defined('CPF_API_URL_DEFAULT'))   define('CPF_API_URL_DEFAULT',   'https://magmadatahub.com/api.php');
-if (!defined('CPF_API_TOKEN_DEFAULT')) define('CPF_API_TOKEN_DEFAULT', 'bda23ca460ae7b58ec31e2c17079405d');
-if (!defined('CPF_API2_URL_DEFAULT'))   define('CPF_API2_URL_DEFAULT',   'https://api.apicpf.dev/consulta');
-if (!defined('CPF_API2_TOKEN_DEFAULT')) define('CPF_API2_TOKEN_DEFAULT', 'sk-live_b1ddb2a65212004784d3b7d00748b331cf569854337c7d08');
+if (!defined('CPF_API_URL_DEFAULT'))   define('CPF_API_URL_DEFAULT',   'https://api.apicpf.dev/consulta');
+if (!defined('CPF_API_TOKEN_DEFAULT')) define('CPF_API_TOKEN_DEFAULT', 'sk-live_5b5818a9dfa8d367599f72ce530391df2047908d0e80baf5');
 if (!defined('MANGOFY_API_KEY_DEFAULT'))    define('MANGOFY_API_KEY_DEFAULT',    '');
 if (!defined('MANGOFY_STORE_CODE_DEFAULT')) define('MANGOFY_STORE_CODE_DEFAULT', '');
 if (!defined('MANGOFY_BASE_URL_DEFAULT'))   define('MANGOFY_BASE_URL_DEFAULT',   'https://checkout.mangofy.com.br');
@@ -1148,11 +1146,9 @@ function read_json_body() {
 
 /* =============================================================================
  * CONSULTA DE CPF (API externa) — credenciais em secrets-cpf[-sr]/.env
- *   CPF_API_URL   = base da API (ex.: https://legendaryapi.online)
- *   CPF_API_TOKEN = chave/token da API
- *   CPF_API_MODE  = "path" (padrao: GET {URL}/{TOKEN}/{cpf})
- *                 | "query" (GET {URL}?token={TOKEN}&cpf={cpf})
- *                 | "bearer" (GET {URL}/{cpf} com Authorization: Bearer {TOKEN})
+ *   CPF_API_URL   = https://api.apicpf.dev/consulta
+ *   CPF_API_TOKEN / CPF_API_KEY = X-API-KEY
+ *   CPF_API_MODE  = "xapikey" (padrao: GET {URL}?cpf= + header X-API-KEY)
  *   CPF_CACHE_TTL = segundos de cache local (padrao 86400)
  * Resposta normalizada: {ok, nome, cpf, cpfformatado, nascimento, genero}
  * ========================================================================== */
@@ -1257,14 +1253,9 @@ function consultar_cpf_externo($cpfIn) {
     if (!cpf_is_valid($cpf)) {
         return array('ok' => false, 'code' => 400, 'error' => 'CPF invalido');
     }
-    // API primaria (secrets-cpf/.env tem prioridade sobre o padrao embutido).
     $url   = cpf_env('CPF_API_URL', CPF_API_URL_DEFAULT);
     $token = cpf_env('CPF_API_TOKEN', cpf_env('CPF_API_KEY', CPF_API_TOKEN_DEFAULT));
-    $mode  = cpf_env('CPF_API_MODE', 'query');
-    // API secundaria (fallback interno).
-    $url2   = cpf_env('CPF_API2_URL', CPF_API2_URL_DEFAULT);
-    $token2 = cpf_env('CPF_API2_TOKEN', cpf_env('CPF_API2_KEY', CPF_API2_TOKEN_DEFAULT));
-    $mode2  = cpf_env('CPF_API2_MODE', 'xapikey');
+    $mode  = cpf_env('CPF_API_MODE', 'xapikey');
     if ($url === '' || $token === '') {
         return array('ok' => false, 'code' => 503, 'error' => 'API de CPF nao configurada (secrets-cpf/.env).');
     }
@@ -1278,16 +1269,8 @@ function consultar_cpf_externo($cpfIn) {
         if (is_array($c) && !empty($c['ok'])) { $c['cache'] = true; return $c; }
     }
 
-    // Tenta primaria; se falhar, tenta secundaria.
     $r = cpf_fetch_from_api($url, $token, $mode, $cpf);
-    $src = 'primaria';
-    $primaryFailed = ($r['errc'] !== '' || !is_array($r['json']) || $r['http'] === 404 || $r['nome'] === '');
-    if ($primaryFailed && $url2 !== '' && $token2 !== '') {
-        $r2 = cpf_fetch_from_api($url2, $token2, $mode2, $cpf);
-        if ($r2['errc'] === '' && is_array($r2['json']) && $r2['http'] !== 404 && $r2['nome'] !== '') {
-            $r = $r2; $src = 'secundaria';
-        }
-    }
+    $src = 'apicpf';
 
     if ($r['errc'] !== '' && !is_array($r['json'])) {
         return array('ok' => false, 'code' => 502, 'error' => 'Falha ao consultar a API de CPF.', 'detail' => $r['errc']);
