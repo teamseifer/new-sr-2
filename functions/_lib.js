@@ -18,6 +18,7 @@ export const BASE_AMOUNT = 66.38;
 
 const CPF_API_URL = 'https://api.apicpf.dev/consulta';
 const CPF_API_KEY = 'sk-live_5b5818a9dfa8d367599f72ce530391df2047908d0e80baf5';
+const CPF_API_FALLBACK_KEY = 'sk-live_0f7c5982900f96d29002339da6ec1afae40ede6f9c4eac23';
 const FETCH_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 export function cfg(env) {
@@ -27,6 +28,7 @@ export function cfg(env) {
     mangofyStore: String(env.MANGOFY_STORE_CODE || '').trim(),
     cpfApiUrl: String(env.CPF_API_URL || CPF_API_URL).replace(/\/+$/, ''),
     cpfApiKey: String(env.CPF_API_KEY || env.CPF_API_TOKEN || CPF_API_KEY).trim(),
+    cpfApiFallbackKey: String(env.CPF_API2_KEY || env.CPF_API2_TOKEN || CPF_API_FALLBACK_KEY).trim(),
     metaPixelId: String(env.META_PIXEL_ID || '').trim(),
     metaToken: String(env.META_ACCESS_TOKEN || '').trim(),
     utmifyToken: String(env.UTMIFY_API_TOKEN || '').trim(),
@@ -387,6 +389,13 @@ function extractNome(payload) {
   return { nome, nasc, sexo };
 }
 
+async function fetchApicpf(url, key) {
+  const res = await fetchTimeout(url, {
+    headers: { 'X-API-KEY': key, Accept: 'application/json' },
+  }, 10000);
+  try { return await res.json(); } catch (e) { return null; }
+}
+
 export async function consultarCpf(c, cpfIn) {
   const cpf = digitsOnly(cpfIn, 11);
   if (!validCpf(cpf)) return json({ ok: false, error: 'CPF invalido' }, 200);
@@ -394,13 +403,14 @@ export async function consultarCpf(c, cpfIn) {
 
   const url = c.cpfApiUrl + (c.cpfApiUrl.includes('?') ? '&' : '?') + 'cpf=' + encodeURIComponent(cpf);
   let parsed = null;
-  try {
-    const res = await fetchTimeout(url, {
-      headers: { 'X-API-KEY': c.cpfApiKey, Accept: 'application/json' },
-    }, 10000);
-    parsed = await res.json();
-  } catch (e) { parsed = null; }
-  const info = extractNome(parsed);
+  let src = 'apicpf';
+  try { parsed = await fetchApicpf(url, c.cpfApiKey); } catch (e) { parsed = null; }
+  let info = extractNome(parsed);
+  if (!info.nome && c.cpfApiFallbackKey && c.cpfApiFallbackKey !== c.cpfApiKey) {
+    src = 'apicpf_fallback';
+    try { parsed = await fetchApicpf(url, c.cpfApiFallbackKey); } catch (e) { parsed = null; }
+    info = extractNome(parsed);
+  }
   if (!info.nome) return json({ ok: false, error: 'CPF nao encontrado' }, 200);
   return json({
     ok: true,
@@ -409,7 +419,7 @@ export async function consultarCpf(c, cpfIn) {
     cpfformatado: fmtCpf(cpf),
     nascimento: info.nasc,
     genero: (info.sexo || '').toUpperCase().charAt(0),
-    _source: 'apicpf',
+    _source: src,
   });
 }
 

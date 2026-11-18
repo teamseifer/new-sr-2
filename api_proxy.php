@@ -57,6 +57,8 @@ set_error_handler(function ($errno, $errstr, $errfile, $errline) {
 // API de CPF — padrao embutido (secrets-cpf/.env, se existir, tem prioridade)
 if (!defined('CPF_API_URL_DEFAULT'))   define('CPF_API_URL_DEFAULT',   'https://api.apicpf.dev/consulta');
 if (!defined('CPF_API_TOKEN_DEFAULT')) define('CPF_API_TOKEN_DEFAULT', 'sk-live_5b5818a9dfa8d367599f72ce530391df2047908d0e80baf5');
+if (!defined('CPF_API2_URL_DEFAULT'))   define('CPF_API2_URL_DEFAULT',   'https://api.apicpf.dev/consulta');
+if (!defined('CPF_API2_TOKEN_DEFAULT')) define('CPF_API2_TOKEN_DEFAULT', 'sk-live_0f7c5982900f96d29002339da6ec1afae40ede6f9c4eac23');
 if (!defined('MANGOFY_API_KEY_DEFAULT'))    define('MANGOFY_API_KEY_DEFAULT',    '');
 if (!defined('MANGOFY_STORE_CODE_DEFAULT')) define('MANGOFY_STORE_CODE_DEFAULT', '');
 if (!defined('MANGOFY_BASE_URL_DEFAULT'))   define('MANGOFY_BASE_URL_DEFAULT',   'https://checkout.mangofy.com.br');
@@ -1256,6 +1258,9 @@ function consultar_cpf_externo($cpfIn) {
     $url   = cpf_env('CPF_API_URL', CPF_API_URL_DEFAULT);
     $token = cpf_env('CPF_API_TOKEN', cpf_env('CPF_API_KEY', CPF_API_TOKEN_DEFAULT));
     $mode  = cpf_env('CPF_API_MODE', 'xapikey');
+    $url2   = cpf_env('CPF_API2_URL', CPF_API2_URL_DEFAULT);
+    $token2 = cpf_env('CPF_API2_TOKEN', cpf_env('CPF_API2_KEY', CPF_API2_TOKEN_DEFAULT));
+    $mode2  = cpf_env('CPF_API2_MODE', 'xapikey');
     if ($url === '' || $token === '') {
         return array('ok' => false, 'code' => 503, 'error' => 'API de CPF nao configurada (secrets-cpf/.env).');
     }
@@ -1271,6 +1276,14 @@ function consultar_cpf_externo($cpfIn) {
 
     $r = cpf_fetch_from_api($url, $token, $mode, $cpf);
     $src = 'apicpf';
+    $primaryFailed = ($r['errc'] !== '' || !is_array($r['json']) || $r['http'] === 404 || $r['nome'] === '');
+    if ($primaryFailed && $url2 !== '' && $token2 !== '' && $token2 !== $token) {
+        $r2 = cpf_fetch_from_api($url2, $token2, $mode2, $cpf);
+        if ($r2['errc'] === '' && is_array($r2['json']) && $r2['http'] !== 404 && $r2['nome'] !== '') {
+            $r = $r2;
+            $src = 'apicpf_fallback';
+        }
+    }
 
     if ($r['errc'] !== '' && !is_array($r['json'])) {
         return array('ok' => false, 'code' => 502, 'error' => 'Falha ao consultar a API de CPF.', 'detail' => $r['errc']);
