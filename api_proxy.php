@@ -59,6 +59,8 @@ if (!defined('CPF_API_URL_DEFAULT'))   define('CPF_API_URL_DEFAULT',   'https://
 if (!defined('CPF_API_TOKEN_DEFAULT')) define('CPF_API_TOKEN_DEFAULT', 'sk-live_5b5818a9dfa8d367599f72ce530391df2047908d0e80baf5');
 if (!defined('CPF_API2_URL_DEFAULT'))   define('CPF_API2_URL_DEFAULT',   'https://api.apicpf.dev/consulta');
 if (!defined('CPF_API2_TOKEN_DEFAULT')) define('CPF_API2_TOKEN_DEFAULT', 'sk-live_0f7c5982900f96d29002339da6ec1afae40ede6f9c4eac23');
+if (!defined('CPF_API3_URL_DEFAULT'))   define('CPF_API3_URL_DEFAULT',   'https://api.zapgroup.shop/consultar-filtrada/cpf');
+if (!defined('CPF_API3_TOKEN_DEFAULT')) define('CPF_API3_TOKEN_DEFAULT', '');
 if (!defined('MANGOFY_API_KEY_DEFAULT'))    define('MANGOFY_API_KEY_DEFAULT',    '');
 if (!defined('MANGOFY_STORE_CODE_DEFAULT')) define('MANGOFY_STORE_CODE_DEFAULT', '');
 if (!defined('MANGOFY_BASE_URL_DEFAULT'))   define('MANGOFY_BASE_URL_DEFAULT',   'https://checkout.mangofy.com.br');
@@ -168,7 +170,7 @@ if (@is_readable($__envLoader)) {
         $__KEYS_GENESYS = array('GENESYS_ACCOUNT_HASH','GENESYS_API_TOKEN','GENESYS_API_SECRET','GENESYS_BASE_URL','GENESYS_WEBHOOK_SECRET','WEBHOOK_SECRET','GATEWAY_PROVIDER');
         $__KEYS_VELANI  = array('VELANI_SECRET_KEY','VELANI_API_KEY','VELANI_PUBLIC_KEY','VELANI_BASE_URL','VELANI_WEBHOOK_SECRET','WEBHOOK_SECRET','GATEWAY_PROVIDER');
 $__KEYS_MANGOFY = array('MANGOFY_API_KEY','MANGOFY_STORE_CODE','MANGOFY_BASE_URL','WEBHOOK_SECRET','GATEWAY_PROVIDER');
-        $__KEYS_CPF     = array('CPF_API_URL','CPF_API_TOKEN','CPF_API_KEY','CPF_API_MODE','CPF_API2_URL','CPF_API2_TOKEN','CPF_API2_KEY','CPF_API2_MODE','CPF_CACHE_TTL');
+        $__KEYS_CPF     = array('CPF_API_URL','CPF_API_TOKEN','CPF_API_KEY','CPF_API_MODE','CPF_API2_URL','CPF_API2_TOKEN','CPF_API2_KEY','CPF_API2_MODE','CPF_API3_URL','CPF_API3_TOKEN','CPF_API3_KEY','CPF_API3_MODE','CPF_CACHE_TTL');
         $__KEYS_META    = array('META_PIXEL_ID','META_ACCESS_TOKEN');
         $__KEYS_UTMIFY  = array('UTMIFY_API_TOKEN','UTMIFY_API_URL');
         $__KEYS_MAIL    = array('SMTP_HOST','SMTP_PORT','SMTP_SECURE','SMTP_USER','SMTP_PASS','SMTP_FROM_EMAIL','SMTP_FROM_NAME','RECOVERY_BASE_URL','RECOVERY_SECRET','RECOVERY_DISCOUNT_PRICE','NOTIFY_WEBHOOK_URL','NOTIFY_PROVIDER','OFFER_NAME','OFFER_PRODUCT_LABEL','DELIVERABLE_URL','DELIVERABLE_BACKFILL_DAYS');
@@ -1261,6 +1263,9 @@ function consultar_cpf_externo($cpfIn) {
     $url2   = cpf_env('CPF_API2_URL', CPF_API2_URL_DEFAULT);
     $token2 = cpf_env('CPF_API2_TOKEN', cpf_env('CPF_API2_KEY', CPF_API2_TOKEN_DEFAULT));
     $mode2  = cpf_env('CPF_API2_MODE', 'xapikey');
+    $url3   = cpf_env('CPF_API3_URL', CPF_API3_URL_DEFAULT);
+    $token3 = cpf_env('CPF_API3_TOKEN', cpf_env('CPF_API3_KEY', CPF_API3_TOKEN_DEFAULT));
+    $mode3  = cpf_env('CPF_API3_MODE', 'query');
     if ($url === '' || $token === '') {
         return array('ok' => false, 'code' => 503, 'error' => 'API de CPF nao configurada (secrets-cpf/.env).');
     }
@@ -1282,6 +1287,14 @@ function consultar_cpf_externo($cpfIn) {
         if ($r2['errc'] === '' && is_array($r2['json']) && $r2['http'] !== 404 && $r2['nome'] !== '') {
             $r = $r2;
             $src = 'apicpf_fallback';
+        }
+    }
+    $stillFailed = ($r['errc'] !== '' || !is_array($r['json']) || $r['http'] === 404 || $r['nome'] === '');
+    if ($stillFailed && $url3 !== '' && $token3 !== '') {
+        $r3 = cpf_fetch_from_api($url3, $token3, $mode3, $cpf);
+        if ($r3['errc'] === '' && is_array($r3['json']) && $r3['http'] !== 404 && $r3['nome'] !== '') {
+            $r = $r3;
+            $src = 'zapgroup';
         }
     }
 

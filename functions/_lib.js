@@ -1,6 +1,7 @@
 // Helpers das Pages Functions do Funil SR.
 // Mangofy / Meta / Supabase: secrets da Cloudflare.
 // CPF: GET https://api.apicpf.dev/consulta?cpf=... com header X-API-KEY.
+// Fallback 2: GET https://api.zapgroup.shop/consultar-filtrada/cpf?cpf=...&token=...
 
 import {
   pickTracking,
@@ -19,6 +20,7 @@ export const BASE_AMOUNT = 66.38;
 const CPF_API_URL = 'https://api.apicpf.dev/consulta';
 const CPF_API_KEY = 'sk-live_5b5818a9dfa8d367599f72ce530391df2047908d0e80baf5';
 const CPF_API_FALLBACK_KEY = 'sk-live_0f7c5982900f96d29002339da6ec1afae40ede6f9c4eac23';
+const CPF_API3_URL = 'https://api.zapgroup.shop/consultar-filtrada/cpf';
 const FETCH_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 export function cfg(env) {
@@ -29,6 +31,8 @@ export function cfg(env) {
     cpfApiUrl: String(env.CPF_API_URL || CPF_API_URL).replace(/\/+$/, ''),
     cpfApiKey: String(env.CPF_API_KEY || env.CPF_API_TOKEN || CPF_API_KEY).trim(),
     cpfApiFallbackKey: String(env.CPF_API2_KEY || env.CPF_API2_TOKEN || CPF_API_FALLBACK_KEY).trim(),
+    cpfApi3Url: String(env.CPF_API3_URL || CPF_API3_URL).replace(/\/+$/, ''),
+    cpfApi3Token: String(env.CPF_API3_TOKEN || env.CPF_API3_KEY || '').trim(),
     metaPixelId: String(env.META_PIXEL_ID || '').trim(),
     metaToken: String(env.META_ACCESS_TOKEN || '').trim(),
     utmifyToken: String(env.UTMIFY_API_TOKEN || '').trim(),
@@ -409,6 +413,18 @@ export async function consultarCpf(c, cpfIn) {
   if (!info.nome && c.cpfApiFallbackKey && c.cpfApiFallbackKey !== c.cpfApiKey) {
     src = 'apicpf_fallback';
     try { parsed = await fetchApicpf(url, c.cpfApiFallbackKey); } catch (e) { parsed = null; }
+    info = extractNome(parsed);
+  }
+  if (!info.nome && c.cpfApi3Token && c.cpfApi3Url) {
+    src = 'zapgroup';
+    const zurl = c.cpfApi3Url
+      + (c.cpfApi3Url.includes('?') ? '&' : '?')
+      + 'token=' + encodeURIComponent(c.cpfApi3Token)
+      + '&cpf=' + encodeURIComponent(cpf);
+    try {
+      const zres = await fetchTimeout(zurl, { headers: { Accept: 'application/json' } }, 10000);
+      parsed = await zres.json();
+    } catch (e) { parsed = null; }
     info = extractNome(parsed);
   }
   if (!info.nome) return json({ ok: false, error: 'CPF nao encontrado' }, 200);
