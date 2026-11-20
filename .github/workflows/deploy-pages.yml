@@ -17,24 +17,9 @@ jobs:
       fail-fast: false
       matrix:
         project:
-          - resgatebenficios
-          - consultvalors
-          - atendimentrapido
-          - negociadividas
-          - regularizacpf
-          - consultanegativ
-          - acordolimpanome
-          - baixapendenc
-          - quitadividas
-          - limpanegativ
-          - consultscore
-          - resolvependenc
-          - acordofacil
-          - consultagora
-          - consultaja
-          - consultahora
-          - consultarapid
-          - consultafacil
+          - negociacpf
+          - limpanomeja
+          - resgateacordo
     steps:
       - uses: actions/checkout@v4
       - uses: cloudflare/wrangler-action@v3
