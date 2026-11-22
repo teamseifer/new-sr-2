@@ -162,8 +162,9 @@ async function checkPix(manual){
         var _m=(document.cookie.match(/_fbp=([^;]+)/)||[])[1]||'';
         var _c=(document.cookie.match(/_fbc=([^;]+)/)||[])[1]||'';
         var _cpf='';try{_cpf=(''+(JSON.parse(localStorage.getItem('sr_consulta')||'{}').cpf||localStorage.getItem('sr_cpf')||'')).replace(/\D/g,'');}catch(e){}
-        if(window.fbq&&!checkPix.tracked){checkPix.tracked=true;fbq('track','Purchase',{value:66.38,currency:'BRL',content_ids:[pix.id],content_type:'product'},{eventID:pix.id});}
-        fetch('../api_proxy.php?action=track_sale',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:pix.id,event_name:'Purchase',value:66.38,currency:'BRL',cpf:_cpf,tracking:(window.__getTracking?window.__getTracking():{}),fbp:_m,fbc:_c})});
+        var _pv=(pix&&pix.total)?Number(pix.total):((window.SR_CONFIG&&window.SR_CONFIG.getAcordoAmount)?window.SR_CONFIG.getAcordoAmount(false):66.38);
+        if(window.fbq&&!checkPix.tracked){checkPix.tracked=true;fbq('track','Purchase',{value:_pv,currency:'BRL',content_ids:[pix.id],content_type:'product'},{eventID:pix.id});}
+        fetch('../api_proxy.php?action=track_sale',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event_id:pix.id,event_name:'Purchase',value:_pv,currency:'BRL',cpf:_cpf,tracking:(window.__getTracking?window.__getTracking():{}),fbp:_m,fbc:_c})});
       }catch(e){}
       if(!checkPix.redirected){
         checkPix.redirected=true;

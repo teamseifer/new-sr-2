@@ -1,0 +1,15 @@
+.private/**
+.private/**/*
+cf/node_modules/**
+cf/.wrangler/**
+**/*.php
+**/.DS_Store
+**/*.log
+dev-router.php
+cron_*.php
+limpar_cache_cs.php
+serve-local.sh
+.git/**
+.github/**
+cf/supabase/**
+assetsignore

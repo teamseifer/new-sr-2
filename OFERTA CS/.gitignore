@@ -2,6 +2,9 @@
 # .gitignore - Funil CNH Social 2026
 # =============================================================================
 
+# ----- Nunca enviar ao Cloudflare Pages (deploy usa o git, sem .private) ------
+.private/
+
 # ----- Segredos e variaveis de ambiente (NUNCA versionar) --------------------
 .env
 .env.*

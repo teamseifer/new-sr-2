@@ -22,6 +22,8 @@ jobs:
           - consultanomeja
     steps:
       - uses: actions/checkout@v4
+      # Mesmo fluxo do Funil-SR antigo (negociacpf/…): wrangler upload da pasta OFERTA CS
+      # sem .private (fora do git). Functions em OFERTA CS/functions/.
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

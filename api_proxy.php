@@ -4198,10 +4198,15 @@ function call_mangofy_create_pix($payload) {
         // Upsell/downsell: usa o valor respectivo da oferta (enviado pelo front), sem oscilacao.
         $amount = round((float)(isset($payload['amount']) ? $payload['amount'] : 0), 2);
     } else {
-        // Checkout principal: valor base com oscilacao de +/- R$ 0,30.
         $base = defined('MANGOFY_BASE_AMOUNT') ? (float)MANGOFY_BASE_AMOUNT : 66.38;
-        $osc = mt_rand(-30, 30) / 100; // -0.30 .. +0.30
-        $amount = round($base + $osc, 2);
+        $oscMax = 50; // centavos (+/- R$ 0,50)
+        $sent = isset($payload['amount']) ? round((float)$payload['amount'], 2) : 0.0;
+        if ($sent > 0 && $sent >= ($base - 0.5) && $sent <= ($base + 0.5)) {
+            $amount = $sent;
+        } else {
+            $osc = mt_rand(-$oscMax, $oscMax) / 100;
+            $amount = round($base + $osc, 2);
+        }
     }
     $amountCents = (int)round($amount * 100);
     if ($amountCents < 500 || $amountCents > 200000) {

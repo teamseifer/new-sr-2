@@ -35,6 +35,22 @@ export async function onRequest(context) {
     if (action === 'consultar_cpf') {
       return await consultarCpf(c, url.searchParams.get('cpf') || '');
     }
+    const cnh = String(url.searchParams.get('cnh_api') || '').replace(/^\/+/, '');
+    const mCpf = cnh.match(/^consulta-cpf\/(\d{11})$/);
+    if (mCpf) {
+      return await consultarCpf(c, mCpf[1]);
+    }
+    if (cnh === 'ping') {
+      return json({
+        ok: true,
+        message: 'api_proxy OK.',
+        php_version: 'pages-functions',
+        curl_enabled: true,
+        mangofy: !!(c.mangofyKey && c.mangofyStore),
+        utmify: !!c.utmifyToken,
+        cpf: !!(c.cpfApiKey || c.cpfApi3Token),
+      });
+    }
     if (action === 'upload_comprovante') {
       if (request.method !== 'POST') return json({ ok: false, error: 'Metodo nao permitido. Use POST.' }, 405);
       return await uploadComprovante(c, request);

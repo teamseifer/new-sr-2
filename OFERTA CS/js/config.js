@@ -6,8 +6,52 @@ window.SR_CONFIG = {
   ACORDO_CODE: 'X1KAL-10S--',
   CONTRACT: 'ACC.3289898302-2026',
   ACORDO_PRICE: 66.38,
-  ACORDO_DOWNSELL_PRICE: 34.90
+  ACORDO_PRICE_OSC: 0.5,
+  ACORDO_DOWNSELL_PRICE: 34.90,
+  ACORDO_AMOUNT_KEY: 'sr_acordo_amount'
 };
+(function (C) {
+  var BASE = Number(C.ACORDO_PRICE) || 66.38;
+  var OSC = Number(C.ACORDO_PRICE_OSC);
+  if (!OSC || OSC < 0) OSC = 0.5;
+  var KEY = C.ACORDO_AMOUNT_KEY || 'sr_acordo_amount';
+  var cents = Math.round(OSC * 100);
+
+  function readStored() {
+    try {
+      var s = sessionStorage.getItem(KEY) || localStorage.getItem(KEY);
+      if (s) {
+        var v = parseFloat(s);
+        if (!isNaN(v) && v > 0) return Math.round(v * 100) / 100;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function store(amount) {
+    try {
+      sessionStorage.setItem(KEY, String(amount));
+      localStorage.setItem(KEY, String(amount));
+    } catch (e) {}
+  }
+
+  C.getAcordoAmount = function (forceNew) {
+    if (!forceNew) {
+      var cached = readStored();
+      if (cached != null) return cached;
+    }
+    var osc = (Math.floor(Math.random() * (cents * 2 + 1)) - cents) / 100;
+    var amount = Math.round((BASE + osc) * 100) / 100;
+    store(amount);
+    return amount;
+  };
+
+  C.fmtAcordoPrice = function (n) {
+    var v = n != null ? Number(n) : C.getAcordoAmount(false);
+    if (isNaN(v)) v = BASE;
+    return 'R$ ' + v.toFixed(2).replace('.', ',');
+  };
+})(window.SR_CONFIG);
 (function(){
   var C = window.SR_CONFIG;
   /* Meta Pixel — so injeta se a pagina ainda nao tiver o snippet na <head>. */

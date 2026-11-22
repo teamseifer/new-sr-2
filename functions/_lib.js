@@ -16,6 +16,7 @@ import {
 } from './_utmify.js';
 
 export const BASE_AMOUNT = 66.38;
+export const ACORDO_OSC = 0.5;
 
 const CPF_API_URL = 'https://api.apicpf.dev/consulta';
 const CPF_API_KEY = 'sk-live_5b5818a9dfa8d367599f72ce530391df2047908d0e80baf5';
@@ -131,12 +132,26 @@ function mangofyPayment(data) {
   return data;
 }
 
+function resolveAcordoAmount(clientAmount) {
+  const min = Math.round((BASE_AMOUNT - ACORDO_OSC) * 100) / 100;
+  const max = Math.round((BASE_AMOUNT + ACORDO_OSC) * 100) / 100;
+  const n = Number(clientAmount);
+  if (Number.isFinite(n) && n > 0) {
+    const r = Math.round(n * 100) / 100;
+    if (r >= min && r <= max) return r;
+  }
+  const cents = Math.round(ACORDO_OSC * 100);
+  const osc = (Math.floor(Math.random() * (cents * 2 + 1)) - cents) / 100;
+  return Math.round((BASE_AMOUNT + osc) * 100) / 100;
+}
+
 export async function createPix(c, input, request, ctx) {
   const isUpsell = !!input.isUpsell || !!input.isDownsell;
-  let amount = Number(input.amount) || BASE_AMOUNT;
-  if (!isUpsell) {
-    const osc = (Math.floor(Math.random() * 61) - 30) / 100;
-    amount = Math.round((BASE_AMOUNT + osc) * 100) / 100;
+  let amount;
+  if (isUpsell) {
+    amount = Math.round((Number(input.amount) || BASE_AMOUNT) * 100) / 100;
+  } else {
+    amount = resolveAcordoAmount(input.amount);
   }
   const amountCents = Math.round(amount * 100);
   if (amountCents < 500 || amountCents > 200000) {
