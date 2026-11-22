@@ -1,0 +1,20 @@
+{
+  "name": "cnh-social-cloudflare",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Funil CNH Social 2026 - API no Cloudflare Pages Functions (gateway MangoFy)",
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "deploy": "wrangler pages deploy public",
+    "kv:create": "wrangler kv namespace create CNH_TX",
+    "secret:mangofy-key": "wrangler pages secret put MANGOFY_API_KEY",
+    "secret:mangofy-store": "wrangler pages secret put MANGOFY_STORE_CODE",
+    "secret:webhook": "wrangler pages secret put WEBHOOK_SECRET",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261023.1",
+    "typescript": "^5.6.3",
+    "wrangler": "^4.0.0"
+  }
+}

@@ -1,11 +1,27 @@
-# Funil-SR
+# NEW SR 2 — Desenrola Brasil + Serasa Limpa Nome
 
-Funil Serasa Limpa Nome. Front estático + Cloudflare Pages Functions.
+O funil ativo está em **`OFERTA CS/`** (React + atendimento + pagamento PIX).
 
-As chaves (Mangofy, CPF, Meta CAPI, Supabase) ficam **somente** em Cloudflare Pages secrets. Não vão para o Git.
+## Desenvolvimento local
 
-## Páginas
+```bash
+cd "OFERTA CS"
+./serve-local.sh
+# http://127.0.0.1:8840/login
+```
 
-- https://negociacpf.pages.dev
-- https://limpanomeja.pages.dev
-- https://resgateacordo.pages.dev
+## Fluxo
+
+`login` → quizzes → `verify-availability` (score) → `conectando/` → `atendimento/` → `pagamento/` / `pix/`
+
+## Cloudflare
+
+Configuração em `OFERTA CS/cf/` (Pages Functions, secrets `CPF_API3_TOKEN`, MangoFy, etc.).
+
+## Upsells Serasa
+
+`upsell/` na raiz e em `OFERTA CS/upsell/` (mesma cadeia: registro → adm → …). Não remover.
+
+## Raiz do repositório
+
+Utilitários (`api_proxy.php`, `functions/`, `js/`+`css/` usados pelos upsells, crons, `tests/`, `.private/`).

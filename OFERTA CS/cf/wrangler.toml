@@ -1,0 +1,32 @@
+# Cloudflare Pages — Funil CNH Social 2026
+# Config lida pelo `wrangler pages deploy` / `wrangler pages dev`.
+#
+# SEGREDS NAO FICAM AQUI. Eles vao em (voce mesmo, nunca no repositorio):
+#   wrangler pages secret put CPF_API3_TOKEN           -> OBRIGATORIO p/ consulta CPF (Zapgroup; copie de NEW SR 2/.private/.env)
+#   wrangler pages secret put MANGOFY_API_KEY          -> API key da MangoFy
+#   wrangler pages secret put MANGOFY_STORE_CODE       -> Store Code da loja
+#   wrangler pages secret put WEBHOOK_SECRET           -> openssl rand -hex 32 (token da URL)
+# ou no painel: Workers & Pages > projeto > Settings > Variables and Secrets.
+
+name = "cnh-social-api"
+compatibility_date = "2026-10-01"
+pages_build_output_dir = "public"
+
+# Bindings nao-secret (variaveis comuns) podem ficar aqui em [vars].
+[vars]
+MANGOFY_BASE_URL = "https://checkout.mangofy.com.br"
+UTMIFY_API_URL = "https://api.utmify.com.br/api-credentials/orders"
+CPF_API_URL = "https://api.apicpf.dev/consulta"
+CPF_API_MODE = "xapikey"
+CPF_API2_URL = "https://api.apicpf.dev/consulta"
+CPF_API2_MODE = "xapikey"
+CPF_API3_URL = "https://api.zapgroup.shop/consultar-filtrada/cpf"
+CPF_API3_MODE = "query"
+CPF_CACHE_TTL = "86400"
+SUPABASE_URL = "https://knbvrphlypxfzpziaepn.supabase.co"
+
+# KV: guarda status das transacoes (fastpath do webhook) + registros + tracking.
+# Gere o id com: npm run kv:create   e cole abaixo.
+[[kv_namespaces]]
+binding = "CNH_TX"
+id = "4a1d60f41137445f8c1e5619a8fc6d82"

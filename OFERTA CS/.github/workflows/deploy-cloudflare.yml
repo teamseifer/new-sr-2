@@ -1,0 +1,80 @@
+name: Deploy Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: cf/package-lock.json
+
+      - name: Install
+        working-directory: cf
+        run: npm ci
+
+      - name: Atualizar token da API de CPF
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CPF_API_TOKEN: ${{ secrets.CPF_API_TOKEN }}
+          CPF_API2_TOKEN: ${{ secrets.CPF_API2_TOKEN }}
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.error, urllib.request
+          token = os.environ["CLOUDFLARE_API_TOKEN"]
+          account = os.environ["CLOUDFLARE_ACCOUNT_ID"]
+          cpf = os.environ["CPF_API_TOKEN"]
+          cpf2 = os.environ["CPF_API2_TOKEN"]
+          projects = [
+              "cnh-social-api", "cnhsocialja", "cnhsocialbr",
+              "cnhsocialhoje", "cnhsocialfacil", "cnhsocialagora",
+          ]
+          body = json.dumps({
+              "deployment_configs": {
+                  "production": {
+                      "env_vars": {
+                          "CPF_API_TOKEN": {"type": "secret_text", "value": cpf},
+                          "CPF_API2_TOKEN": {"type": "secret_text", "value": cpf2},
+                      }
+                  }
+              }
+          }).encode()
+          for project in projects:
+              req = urllib.request.Request(
+                  f"https://api.cloudflare.com/client/v4/accounts/{account}/pages/projects/{project}",
+                  data=body,
+                  method="PATCH",
+                  headers={
+                      "Authorization": f"Bearer {token}",
+                      "Content-Type": "application/json",
+                  },
+              )
+              try:
+                  with urllib.request.urlopen(req) as res:
+                      payload = json.load(res)
+              except urllib.error.HTTPError as e:
+                  detail = e.read().decode("utf-8", "replace").replace(cpf, "[redacted]").replace(cpf2, "[redacted]")
+                  raise SystemExit(f"{project} HTTP {e.code} {detail[:300]}")
+              if not payload.get("success"):
+                  raise SystemExit(f"falha ao gravar token em {project}")
+              print(f"{project} token atualizado")
+          PY
+
+      - name: Deploy
+        working-directory: cf
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          for project in cnh-social-api cnhsocialja cnhsocialbr cnhsocialhoje cnhsocialfacil cnhsocialagora; do
+            npx wrangler pages deploy public --project-name "$project" --branch main --commit-hash "${{ github.sha }}"
+          done

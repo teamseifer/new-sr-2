@@ -1,0 +1,8 @@
+# Dependências e segredos locais — NUNCA versionar
+node_modules/
+.wrangler/
+.dev.vars
+*.log
+
+# Build output do Pages (gerado/sincronizado na Fase 4)
+# (public/ é versionado apenas com o index placeholder)

